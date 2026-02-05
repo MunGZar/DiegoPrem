@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DiegoPrem - Dashboard</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+</head>
+<body class="dashboard-page">
+    <!-- Header Navigation -->
+    <header class="dashboard-header">
+        <div class="header-content">
+            <!-- Logo Section -->
+            <div class="logo-section">
+                <svg class="logo-icon-small" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#00ff88;stop-opacity:1" />
+                            <stop offset="50%" style="stop-color:#ffaa00;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#ff0055;stop-opacity:1" />
+                        </linearGradient>
+                    </defs>
+                    <rect x="10" y="10" width="80" height="80" rx="18" fill="url(#logoGradient)"/>
+                    <path d="M 35 30 L 35 70 L 65 50 Z" fill="white" opacity="0.9"/>
+                </svg>
+                <h1 class="app-name">DiegoPrem</h1>
+            </div>
+            
+            <!-- Header Actions -->
+            <div class="header-actions">
+                <!-- Refresh Button -->
+                <button class="btn-refresh" id="refreshButton" title="Actualizar mensajes" aria-label="Actualizar mensajes">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+                    </svg>
+                </button>
+                
+                <!-- User Menu -->
+                <div class="user-menu">
+                    <button class="user-button" id="userMenuButton" aria-haspopup="true" aria-expanded="false">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                        <span id="usernameDisplay">Usuario</span>
+                    </button>
+                    <div class="user-dropdown hidden" id="userDropdown" role="menu">
+                        <a href="#" id="logoutButton" class="dropdown-item" role="menuitem">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                                <polyline points="16 17 21 12 16 7"></polyline>
+                                <line x1="21" y1="12" x2="9" y2="12"></line>
+                            </svg>
+                            Cerrar Sesión
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Dashboard Content -->
+    <main class="dashboard-main">
+        
+        <div class="dashboard-container">
+                    <!-- LIVE NETFLIX HIGHLIGHT -->
+<div class="live-highlight hidden" id="liveNetflixCard">
+
+    <!-- LEFT -->
+    <div class="live-left">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/0/08/Netflix_2015_logo.svg"
+             class="live-logo">
+        <div>
+            <h3>Netflix</h3>
+            <p>Último código recibido</p>
+        </div>
+    </div>
+
+    <!-- CENTER -->
+    <div class="live-center">
+        <div class="live-code" id="liveNetflixCode">------</div>
+        <div class="live-email" id="liveNetflixEmail">
+            correo@ejemplo.com
+        </div>
+    </div>
+
+    <!-- RIGHT -->
+    <div class="live-right">
+        <button class="live-btn" id="copyNetflixCode">
+            Copiar código
+        </button>
+
+        <button class="live-btn secondary" id="copyNetflixEmail">
+            Copiar correo
+        </button>
+    </div>
+
+</div>
+
+            <!-- Search Section -->
+            <div class="search-section">
+                <div class="search-bar">
+                    <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <path d="m21 21-4.35-4.35"></path>
+                    </svg>
+                    <input 
+                        type="text" 
+                        id="searchInput" 
+                        class="search-input" 
+                        placeholder="Buscar por plataforma o correo..."
+                        aria-label="Buscar plataformas"
+                    >
+                </div>
+            </div>
+
+            <!-- Statistics Section -->
+            <div class="stats-section hidden" id="statsSection">
+                <!-- Total Platforms -->
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                            <line x1="8" y1="21" x2="16" y2="21"></line>
+                            <line x1="12" y1="17" x2="12" y2="21"></line>
+                        </svg>
+                    </div>
+                    <div class="stat-info">
+                        <p class="stat-label">Plataformas</p>
+                        <p class="stat-value" id="totalPlatforms">0</p>
+                    </div>
+                </div>
+                
+                <!-- Active Emails -->
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                            <polyline points="22,6 12,13 2,6"></polyline>
+                        </svg>
+                    </div>
+                    <div class="stat-info">
+                        <p class="stat-label">Correos Activos</p>
+                        <p class="stat-value" id="totalEmails">0</p>
+                    </div>
+                </div>
+                
+                <!-- Last Message -->
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <polyline points="12 6 12 12 16 14"></polyline>
+                        </svg>
+                    </div>
+                    <div class="stat-info">
+                        <p class="stat-label">Último Mensaje</p>
+                        <p class="stat-value stat-time" id="lastMessage">-</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Platforms Grid -->
+            <div class="platforms-grid" id="platformsGrid">
+                <!-- Loading State -->
+                <div class="loading-state" id="loadingState">
+                    <div class="loader"></div>
+                    <p>Cargando plataformas...</p>
+                </div>
+            </div>
+
+            <!-- Empty State -->
+            <div class="empty-state hidden" id="emptyState">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+                </svg>
+                <h3>No hay mensajes disponibles</h3>
+                <p>No se encontraron códigos de verificación en las plataformas configuradas. Presiona el botón de actualizar para buscar nuevos mensajes.</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal for Message Details -->
+    <div class="modal hidden" id="messageModal">
+        <div class="modal-overlay" id="modalOverlay"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Detalles del Mensaje</h2>
+                <button class="modal-close" id="modalClose" aria-label="Cerrar modal">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Dynamic content loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/config.js"></script>
+    <script src="js/dashboard.js"></script>
+</body>
+</html>

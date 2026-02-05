@@ -1,0 +1,356 @@
+/**
+ * DiegoPrem - Dashboard JavaScript
+ * Sistema de Gestión de Códigos de Verificación
+ */
+
+let allPlatforms = [];
+
+document.addEventListener('DOMContentLoaded', async () => {
+  // Verificar autenticación
+  if (!Storage.getToken()) {
+    window.location.href = 'login.html';
+    return;
+  }
+  
+  const user = Storage.getUser();
+  document.getElementById('usernameDisplay').textContent = user.username;
+  
+  // Event listeners
+  document.getElementById('refreshButton').addEventListener('click', loadMessages);
+  document.getElementById('searchInput').addEventListener('input', filterPlatforms);
+  document.getElementById('userMenuButton').addEventListener('click', toggleUserMenu);
+  document.getElementById('logoutButton').addEventListener('click', logout);
+  document.getElementById('modalClose')?.addEventListener('click', closeModal);
+  document.getElementById('modalOverlay')?.addEventListener('click', closeModal);
+  
+  // Cargar datos iniciales
+  await loadMessages();
+  
+  // Auto-refresh cada 30 segundos
+  setInterval(loadMessages, 30000);
+});
+
+async function loadMessages() {
+  const grid = document.getElementById('platformsGrid');
+  const loadingState = document.getElementById('loadingState');
+  const emptyState = document.getElementById('emptyState');
+  
+  loadingState?.classList.remove('hidden');
+  emptyState?.classList.add('hidden');
+  grid.innerHTML = '';
+  grid.appendChild(loadingState);
+  
+  try {
+    const response = await API.get('/messages');
+    allPlatforms = response.data;
+    
+    if (allPlatforms.length === 0) {
+      grid.innerHTML = '';
+      emptyState.classList.remove('hidden');
+      grid.appendChild(emptyState);
+      hideNetflixLive();
+    } else {
+      renderNetflixLive(allPlatforms);
+      renderPlatforms(allPlatforms);
+      loadStats();
+    }
+  } catch (error) {
+    console.error('Error cargando mensajes:', error);
+    showError('Error al cargar los mensajes');
+    hideNetflixLive();
+  }
+}
+
+function renderPlatforms(platforms) {
+  const grid = document.getElementById('platformsGrid');
+  grid.innerHTML = '';
+  
+  platforms.forEach(platform => {
+    const card = createPlatformCard(platform);
+    grid.appendChild(card);
+  });
+}
+
+function createPlatformCard(platform) {
+  const card = document.createElement('div');
+  card.className = 'platform-card';
+  
+  const hasMessage = platform.message !== null;
+  const code = hasMessage ? platform.message.extracted_code : null;
+  
+  card.innerHTML = `
+    <div class="platform-header">
+      <img src="${platform.platform_logo || 'https://via.placeholder.com/60'}" 
+           alt="${platform.platform_name}" 
+           class="platform-logo"
+           onerror="this.src='https://via.placeholder.com/60'">
+      <div class="platform-info">
+        <h3>${platform.platform_name}</h3>
+        <p class="platform-email">${platform.email_address}</p>
+      </div>
+    </div>
+    <div class="platform-body">
+      ${hasMessage ? `
+        <div class="message-content">
+          <p class="message-label">Código de Verificación</p>
+          ${code ? `
+            <div class="code-display">${code}</div>
+          ` : `
+            <div class="no-code">No se detectó código en el mensaje</div>
+          `}
+        </div>
+        <div class="message-meta">
+          <span class="meta-item">📅 ${Utils.timeAgo(platform.message.received_at)}</span>
+          ${platform.message.subject ? `<span class="meta-item">📧 ${truncate(platform.message.subject, 30)}</span>` : ''}
+        </div>
+        <div class="platform-actions">
+          ${code ? `
+            <button class="btn-copy" onclick="copyCode('${code}', this)">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+              Copiar Código
+            </button>
+          ` : ''}
+          <button class="btn-view" onclick="viewMessage(${platform.message.id})">Ver Detalles</button>
+        </div>
+      ` : `
+        <div class="no-code">No hay mensajes recientes</div>
+      `}
+    </div>
+  `;
+  
+  return card;
+}
+
+async function copyCode(code, button) {
+  try {
+    await Utils.copyToClipboard(code);
+    const originalHTML = button.innerHTML;
+    button.innerHTML = `
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="20 6 9 17 4 12"></polyline>
+      </svg>
+      ¡Copiado!
+    `;
+    button.classList.add('copied');
+    
+    setTimeout(() => {
+      button.innerHTML = originalHTML;
+      button.classList.remove('copied');
+    }, 2000);
+  } catch (error) {
+    console.error('Error copiando:', error);
+  }
+}
+
+async function viewMessage(messageId) {
+  try {
+    const response = await API.get(`/messages/${messageId}`);
+    const message = response.data;
+    
+    const modal = document.getElementById('messageModal');
+    const modalBody = document.getElementById('modalBody');
+    
+    modalBody.innerHTML = `
+      <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+        <div>
+          <p class="message-label">Remitente</p>
+          <p style="margin-top: 0.5rem; font-family: var(--font-mono); color: var(--text-primary);">${message.sender || 'Desconocido'}</p>
+        </div>
+        <div>
+          <p class="message-label">Asunto</p>
+          <p style="margin-top: 0.5rem; color: var(--text-primary);">${message.subject || 'Sin asunto'}</p>
+        </div>
+        <div>
+          <p class="message-label">Fecha</p>
+          <p style="margin-top: 0.5rem; color: var(--text-primary);">${Utils.formatDate(message.received_at)}</p>
+        </div>
+        ${message.extracted_code ? `
+          <div>
+            <p class="message-label">Código Extraído</p>
+            <div class="code-display" style="margin-top: 0.5rem;">${message.extracted_code}</div>
+          </div>
+        ` : ''}
+        <div>
+          <p class="message-label">Contenido</p>
+          <div style="margin-top: 0.5rem; padding: 1rem; background: var(--bg-secondary); border-radius: var(--radius-md); max-height: 300px; overflow-y: auto; white-space: pre-wrap; color: var(--text-secondary); font-size: 0.9rem;">${message.content.substring(0, 1000)}${message.content.length > 1000 ? '...' : ''}</div>
+        </div>
+      </div>
+    `;
+    
+    modal.classList.remove('hidden');
+  } catch (error) {
+    console.error('Error cargando mensaje:', error);
+  }
+}
+
+function closeModal() {
+  document.getElementById('messageModal').classList.add('hidden');
+}
+
+function filterPlatforms(e) {
+  const searchTerm = e.target.value.toLowerCase();
+  const filtered = allPlatforms.filter(p => 
+    p.platform_name.toLowerCase().includes(searchTerm) ||
+    p.email_address.toLowerCase().includes(searchTerm)
+  );
+  renderPlatforms(filtered);
+}
+
+async function loadStats() {
+  try {
+    const response = await API.get('/messages/stats/summary');
+    const stats = response.data;
+    
+    document.getElementById('totalPlatforms').textContent = allPlatforms.length;
+    document.getElementById('totalEmails').textContent = stats.total_active_emails || 0;
+    document.getElementById('lastMessage').textContent = Utils.timeAgo(stats.last_message_received);
+    document.getElementById('statsSection').classList.remove('hidden');
+  } catch (error) {
+    console.error('Error cargando stats:', error);
+  }
+}
+
+function toggleUserMenu() {
+  document.getElementById('userDropdown').classList.toggle('hidden');
+}
+
+function logout() {
+  Storage.clear();
+  window.location.href = 'login.html';
+}
+
+function truncate(str, max) {
+  return str.length > max ? str.substring(0, max) + '...' : str;
+}
+
+function showError(message) {
+  console.error(message);
+}
+
+/**
+ * ============================================
+ * LIVE NETFLIX HIGHLIGHT
+ * ============================================
+ * Renderiza el destacado especial de Netflix
+ * Muestra el último código recibido de Netflix
+ */
+function renderNetflixLive(platforms) {
+  // Buscar plataforma Netflix con mensaje y código
+  const netflix = platforms.find(p =>
+    p.platform_name.toLowerCase().includes('netflix') &&
+    p.message &&
+    p.message.extracted_code
+  );
+
+  const card = document.getElementById('liveNetflixCard');
+
+  // Si no hay Netflix o no hay código, ocultar la tarjeta
+  if (!netflix || !card) {
+    hideNetflixLive();
+    return;
+  }
+
+  // Actualizar código
+  const codeElement = document.getElementById('liveNetflixCode');
+  if (codeElement) {
+    codeElement.textContent = netflix.message.extracted_code;
+    // Animar el código cuando se actualiza
+    codeElement.style.animation = 'none';
+    setTimeout(() => {
+      codeElement.style.animation = 'pulse 0.5s ease';
+    }, 10);
+  }
+
+  // Actualizar email
+  const emailElement = document.getElementById('liveNetflixEmail');
+  if (emailElement) {
+    emailElement.textContent = netflix.email_address;
+  }
+
+  // Configurar botón copiar código
+  const copyCodeBtn = document.getElementById('copyNetflixCode');
+  if (copyCodeBtn) {
+    // Remover listeners previos
+    copyCodeBtn.replaceWith(copyCodeBtn.cloneNode(true));
+    const newCopyCodeBtn = document.getElementById('copyNetflixCode');
+    
+    newCopyCodeBtn.addEventListener('click', async () => {
+      try {
+        await Utils.copyToClipboard(netflix.message.extracted_code);
+        const originalText = newCopyCodeBtn.textContent;
+        newCopyCodeBtn.textContent = '✓ ¡Copiado!';
+        newCopyCodeBtn.style.transform = 'scale(1.05)';
+        
+        setTimeout(() => {
+          newCopyCodeBtn.textContent = originalText;
+          newCopyCodeBtn.style.transform = 'scale(1)';
+        }, 2000);
+      } catch (error) {
+        console.error('Error al copiar código:', error);
+        newCopyCodeBtn.textContent = '✗ Error';
+        setTimeout(() => {
+          newCopyCodeBtn.textContent = 'Copiar código';
+        }, 2000);
+      }
+    });
+  }
+
+  // Configurar botón copiar email
+  const copyEmailBtn = document.getElementById('copyNetflixEmail');
+  if (copyEmailBtn) {
+    // Remover listeners previos
+    copyEmailBtn.replaceWith(copyEmailBtn.cloneNode(true));
+    const newCopyEmailBtn = document.getElementById('copyNetflixEmail');
+    
+    newCopyEmailBtn.addEventListener('click', async () => {
+      try {
+        await Utils.copyToClipboard(netflix.email_address);
+        const originalText = newCopyEmailBtn.textContent;
+        newCopyEmailBtn.textContent = '✓ ¡Copiado!';
+        newCopyEmailBtn.style.transform = 'scale(1.05)';
+        
+        setTimeout(() => {
+          newCopyEmailBtn.textContent = originalText;
+          newCopyEmailBtn.style.transform = 'scale(1)';
+        }, 2000);
+      } catch (error) {
+        console.error('Error al copiar email:', error);
+        newCopyEmailBtn.textContent = '✗ Error';
+        setTimeout(() => {
+          newCopyEmailBtn.textContent = 'Copiar correo';
+        }, 2000);
+      }
+    });
+  }
+
+  // Mostrar card con animación
+  card.classList.remove('hidden');
+  card.style.animation = 'fadeInUp 0.6s ease';
+}
+
+/**
+ * Oculta el Live Netflix Highlight
+ */
+function hideNetflixLive() {
+  const card = document.getElementById('liveNetflixCard');
+  if (card) {
+    card.classList.add('hidden');
+  }
+}
+
+// Cerrar menú al hacer clic fuera
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.user-menu')) {
+    document.getElementById('userDropdown').classList.add('hidden');
+  }
+});
+
+// Cerrar modal con tecla ESC
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    closeModal();
+  }
+});
