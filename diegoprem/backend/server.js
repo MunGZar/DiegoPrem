@@ -18,7 +18,7 @@ const PORT = process.env.PORT || 3000;
 app.use(cors({
   origin: [
     process.env.CORS_ORIGIN || 'https://diego-prem-2t3v.vercel.app',
-    'https://her-dynamic-handmade-visible.trycloudflare.com'
+    'https://plaza-numerous-military-performer.trycloudflare.com/'
   ],
   credentials: true
 }));
@@ -32,6 +32,10 @@ app.use((req, res, next) => {
 });
 
 // ==================== RUTAS ====================
+app.get('/', (req, res) => {
+  res.send('Backend funcionando 🚀');
+});
+
 app.get('/', (req, res) => {
   res.json({
     success: true,
