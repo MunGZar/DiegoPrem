@@ -6,9 +6,7 @@
 const express = require('express');
 const cors = require('cors');
 const cron = require('node-cron');
-require('dotenv').config({
-  path: __dirname + '/.env'
-});
+require('dotenv').config();
 
 const { testConnection } = require('./config/database');
 const EmailService = require('./services/emailService');
@@ -24,7 +22,7 @@ const PORT = process.env.PORT || 3000;
 
 // ==================== MIDDLEWARES ====================
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || ['https://diego-prem-2t3v.vercel.app', 'https://resoluble-unmeddling-gricelda.ngrok-free.dev'],
+  origin: process.env.CORS_ORIGIN || 'https://diego-prem-2t3v.vercel.app/',
   credentials: true
 }));
 
@@ -38,7 +36,7 @@ app.use((req, res, next) => {
 });
 
 // ==================== RUTAS ====================
-app.get('/api', (req, res) => {
+app.get('/', (req, res) => {
   res.json({
     success: true,
     message: 'DiegoPrem API v1.0',
