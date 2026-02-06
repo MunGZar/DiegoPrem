@@ -3,37 +3,12 @@
  */
 
 const CONFIG = {
-  API_URL: window.API_URL || 'https://resoluble-unmeddling-gricelda.ngrok-free.dev/api',
+  // Cambiar a HTTPS cuando configures SSL
+  API_URL: window.API_URL || 'http://18.216.30.96:3000/api',
   TOKEN_KEY: 'diegoprem_token',
   USER_KEY: 'diegoprem_user'
 };
 
-// Utilidades para localStorage
-const Storage = {
-  setToken(token) {
-    localStorage.setItem(CONFIG.TOKEN_KEY, token);
-  },
-  
-  getToken() {
-    return localStorage.getItem(CONFIG.TOKEN_KEY);
-  },
-  
-  setUser(user) {
-    localStorage.setItem(CONFIG.USER_KEY, JSON.stringify(user));
-  },
-  
-  getUser() {
-    const user = localStorage.getItem(CONFIG.USER_KEY);
-    return user ? JSON.parse(user) : null;
-  },
-  
-  clear() {
-    localStorage.removeItem(CONFIG.TOKEN_KEY);
-    localStorage.removeItem(CONFIG.USER_KEY);
-  }
-};
-
-// Cliente API con autenticación
 const API = {
   async request(endpoint, options = {}) {
     const token = Storage.getToken();
@@ -45,13 +20,14 @@ const API = {
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }
-    
+
     try {
+      // ✅ Corregido: paréntesis en lugar de backticks
       const response = await fetch(`${CONFIG.API_URL}${endpoint}`, {
         ...options,
         headers
       });
-      
+
       const data = await response.json();
       
       if (!response.ok) {
