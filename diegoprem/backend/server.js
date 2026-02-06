@@ -22,7 +22,10 @@ const PORT = process.env.PORT || 3000;
 
 // ==================== MIDDLEWARES ====================
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'https://diego-prem-2t3v.vercel.app/',
+  origin: [
+    process.env.CORS_ORIGIN || 'https://diego-prem-2t3v.vercel.app',
+    ' https://her-dynamic-handmade-visible.trycloudflare.com   '
+  ],
   credentials: true
 }));
 

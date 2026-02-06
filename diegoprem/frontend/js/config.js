@@ -2,7 +2,7 @@
  * DiegoPrem - Configuración del Frontend
  */
 const CONFIG = {
-  API_URL: 'https://games-fax-optimal-morning.trycloudflare.com/api',
+  API_URL: 'https://her-dynamic-handmade-visible.trycloudflare.com/api',
   TOKEN_KEY: 'diegoprem_token',
   USER_KEY: 'diegoprem_user'
 };
