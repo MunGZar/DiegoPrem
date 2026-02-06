@@ -3,7 +3,7 @@
  */
 
 const CONFIG = {
-  API_URL: window.API_URL || 'http://18.216.30.96:3000/',
+  API_URL: window.API_URL || 'https://resoluble-unmeddling-gricelda.ngrok-free.dev/api',
   TOKEN_KEY: 'diegoprem_token',
   USER_KEY: 'diegoprem_user'
 };
