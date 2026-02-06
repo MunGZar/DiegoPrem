@@ -1,14 +1,34 @@
 /**
  * DiegoPrem - Configuración del Frontend
  */
-
 const CONFIG = {
-  // Cambiar a HTTPS cuando configures SSL
-  API_URL: window.API_URL || 'https://games-fax-optimal-morning.trycloudflare.com/api',
+  API_URL: 'https://games-fax-optimal-morning.trycloudflare.com/api',
   TOKEN_KEY: 'diegoprem_token',
   USER_KEY: 'diegoprem_user'
 };
 
+// Utilidades para localStorage
+const Storage = {
+  setToken(token) {
+    localStorage.setItem(CONFIG.TOKEN_KEY, token);
+  },
+  getToken() {
+    return localStorage.getItem(CONFIG.TOKEN_KEY);
+  },
+  setUser(user) {
+    localStorage.setItem(CONFIG.USER_KEY, JSON.stringify(user));
+  },
+  getUser() {
+    const user = localStorage.getItem(CONFIG.USER_KEY);
+    return user ? JSON.parse(user) : null;
+  },
+  clear() {
+    localStorage.removeItem(CONFIG.TOKEN_KEY);
+    localStorage.removeItem(CONFIG.USER_KEY);
+  }
+};
+
+// Cliente API con autenticación
 const API = {
   async request(endpoint, options = {}) {
     const token = Storage.getToken();
@@ -22,7 +42,6 @@ const API = {
     }
 
     try {
-      // ✅ Corregido: paréntesis en lugar de backticks
       const response = await fetch(`${CONFIG.API_URL}${endpoint}`, {
         ...options,
         headers
@@ -111,7 +130,6 @@ const Utils = {
   },
   
   showNotification(message, type = 'info') {
-    // Implementación simple de notificación
     console.log(`[${type.toUpperCase()}] ${message}`);
   }
 };
