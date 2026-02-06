@@ -6,7 +6,9 @@
 const express = require('express');
 const cors = require('cors');
 const cron = require('node-cron');
-require('dotenv').config();
+require('dotenv').config({
+  path: __dirname + '/.env'
+});
 
 const { testConnection } = require('./config/database');
 const EmailService = require('./services/emailService');
@@ -22,7 +24,7 @@ const PORT = process.env.PORT || 3000;
 
 // ==================== MIDDLEWARES ====================
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:8080',
+  origin: process.env.CORS_ORIGIN || 'https://diego-prem-2t3v.vercel.app/',
   credentials: true
 }));
 
