@@ -3,7 +3,7 @@
  */
 
 const CONFIG = {
-  API_URL: 'http://localhost:3000/api',
+  API_URL: window.API_URL || 'http://localhost:3000/api',
   TOKEN_KEY: 'diegoprem_token',
   USER_KEY: 'diegoprem_user'
 };
