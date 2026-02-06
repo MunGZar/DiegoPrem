@@ -1,6 +1,5 @@
 /**
  * DiegoPrem - Servidor Principal
- * Sistema de gestión de códigos de streaming
  */
 
 const express = require('express');
@@ -11,12 +10,7 @@ require('dotenv').config();
 const { testConnection } = require('./config/database');
 const EmailService = require('./services/emailService');
 
-// Importar rutas
-const authRoutes = require('./routes/auth');
-const messageRoutes = require('./routes/messages');
-const adminRoutes = require('./routes/admin');
-
-// Crear aplicación Express
+// Crear aplicación Express PRIMERO
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -24,7 +18,7 @@ const PORT = process.env.PORT || 3000;
 app.use(cors({
   origin: [
     process.env.CORS_ORIGIN || 'https://diego-prem-2t3v.vercel.app',
-    ' https://her-dynamic-handmade-visible.trycloudflare.com   '
+    'https://her-dynamic-handmade-visible.trycloudflare.com'
   ],
   credentials: true
 }));
@@ -32,7 +26,6 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Logging middleware
 app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
   next();
@@ -48,17 +41,18 @@ app.get('/', (req, res) => {
   });
 });
 
-// Rutas de la API
+// Importar rutas DESPUÉS de crear app
+const authRoutes = require('./routes/auth');
+const messageRoutes = require('./routes/messages');
+const adminRoutes = require('./routes/admin');
+
 app.use('/api/auth', authRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/admin', adminRoutes);
 
-// ==================== MANEJO DE ERRORES ====================
+// ==================== ERRORES ====================
 app.use((req, res) => {
-  res.status(404).json({
-    success: false,
-    message: 'Ruta no encontrada'
-  });
+  res.status(404).json({ success: false, message: 'Ruta no encontrada' });
 });
 
 app.use((err, req, res, next) => {
@@ -70,12 +64,11 @@ app.use((err, req, res, next) => {
   });
 });
 
-// ==================== TAREAS PROGRAMADAS ====================
+// ==================== CRON ====================
 const scheduleEmailChecks = () => {
   const cronPattern = process.env.EMAIL_CHECK_INTERVAL || '*/5 * * * *';
-  
   console.log(`📅 Programando verificación de correos: ${cronPattern}`);
-  
+
   cron.schedule(cronPattern, async () => {
     console.log('⏰ Ejecutando verificación automática de correos...');
     try {
@@ -87,19 +80,16 @@ const scheduleEmailChecks = () => {
   });
 };
 
-// ==================== INICIAR SERVIDOR ====================
+// ==================== START ====================
 const startServer = async () => {
   try {
-    // Verificar conexión a base de datos
     const dbConnected = await testConnection();
-    
     if (!dbConnected) {
-      console.error('❌ No se pudo conectar a la base de datos. Verifica tu configuración.');
+      console.error('❌ No se pudo conectar a la base de datos.');
       process.exit(1);
     }
 
-    // Iniciar servidor
-    app.listen(PORT, () => {
+    app.listen(PORT, '0.0.0.0', () => {
       console.log('');
       console.log('╔════════════════════════════════════════╗');
       console.log('║         DiegoPrem Backend v1.0         ║');
@@ -117,10 +107,7 @@ const startServer = async () => {
       console.log('  GET  /api/admin/emails');
       console.log('  GET  /api/admin/users');
       console.log('');
-      
-      // Programar tareas
       scheduleEmailChecks();
-      
       console.log('✅ Sistema listo para recibir peticiones');
       console.log('');
     });
@@ -131,18 +118,9 @@ const startServer = async () => {
   }
 };
 
-// Manejo de señales para shutdown graceful
-process.on('SIGTERM', () => {
-  console.log('⚠️  SIGTERM recibido. Cerrando servidor...');
-  process.exit(0);
-});
+process.on('SIGTERM', () => process.exit(0));
+process.on('SIGINT', () => process.exit(0));
 
-process.on('SIGINT', () => {
-  console.log('\n⚠️  SIGINT recibido. Cerrando servidor...');
-  process.exit(0);
-});
-
-// Iniciar
 startServer();
 
 module.exports = app;
