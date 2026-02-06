@@ -4,8 +4,7 @@
  */
 
 const mysql = require('mysql2');
-require('dotenv').config();
-console.log(process.env.DB_PASSWORD);
+
 
 // Pool de conexiones para mejor rendimiento
 const pool = mysql.createPool({
