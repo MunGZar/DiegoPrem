@@ -24,7 +24,7 @@ const PORT = process.env.PORT || 3000;
 
 // ==================== MIDDLEWARES ====================
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'https://diego-prem-2t3v.vercel.app/',
+  origin: process.env.CORS_ORIGIN || ['https://diego-prem-2t3v.vercel.app', 'https://resoluble-unmeddling-gricelda.ngrok-free.dev'],
   credentials: true
 }));
 
@@ -38,7 +38,7 @@ app.use((req, res, next) => {
 });
 
 // ==================== RUTAS ====================
-app.get('/', (req, res) => {
+app.get('/api', (req, res) => {
   res.json({
     success: true,
     message: 'DiegoPrem API v1.0',
