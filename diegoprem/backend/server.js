@@ -14,15 +14,18 @@ const EmailService = require('./services/emailService');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ==================== MIDDLEWARES ====================
-app.use(cors({
-  origin: [
-    process.env.CORS_ORIGIN || 'https://diego-prem-2t3v.vercel.app',
-    
-  ],
-  credentials: true
-}));
+// ==================== CORS (FIX DEFINITIVO) ====================
+const corsOptions = {
+  origin: true, // refleja automáticamente el Origin entrante
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+};
 
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions)); // 🔥 clave para preflight
+
+// ==================== MIDDLEWARES ====================
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -32,14 +35,11 @@ app.use((req, res, next) => {
 });
 
 // ==================== RUTAS ====================
-app.get('/', (req, res) => {
-  res.send('Backend funcionando 🚀');
-});
 
 app.get('/', (req, res) => {
   res.json({
     success: true,
-    message: 'DiegoPrem API v1.0',
+    message: 'DiegoPrem API v1.0 - Backend funcionando ',
     status: 'running',
     timestamp: new Date().toISOString()
   });
