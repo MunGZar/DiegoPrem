@@ -4,7 +4,7 @@
 
 const CONFIG = {
   // Cambiar a HTTPS cuando configures SSL
-  API_URL: window.API_URL || 'http://18.216.30.96:3000/api',
+  API_URL: window.API_URL || 'https://games-fax-optimal-morning.trycloudflare.com/api',
   TOKEN_KEY: 'diegoprem_token',
   USER_KEY: 'diegoprem_user'
 };
