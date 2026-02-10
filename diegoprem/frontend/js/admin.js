@@ -68,6 +68,52 @@ function setupRealTimeUpdates() {
   }
 }
 
+/**
+ * Renderiza el destacado especial de Netflix en el panel de admin
+ */
+function renderNetflixLive(platforms) {
+  const netflix = platforms.find(p =>
+    p.platform_name.toLowerCase().includes('netflix') &&
+    p.message &&
+    p.message.extracted_code
+  );
+
+  const card = document.getElementById('liveNetflixCard');
+  if (!netflix || !card) {
+    hideNetflixLive();
+    return;
+  }
+
+  // Actualizar código y email
+  document.getElementById('liveNetflixCode').textContent = netflix.message.extracted_code;
+  document.getElementById('liveNetflixEmail').textContent = netflix.email_address;
+
+  // Configurar botones
+  const copyCodeBtn = document.getElementById('copyNetflixCode');
+  const copyEmailBtn = document.getElementById('copyNetflixEmail');
+
+  copyCodeBtn.onclick = async () => {
+    await Utils.copyToClipboard(netflix.message.extracted_code);
+    const original = copyCodeBtn.textContent;
+    copyCodeBtn.textContent = '¡Copiado!';
+    setTimeout(() => copyCodeBtn.textContent = original, 2000);
+  };
+
+  copyEmailBtn.onclick = async () => {
+    await Utils.copyToClipboard(netflix.email_address);
+    const original = copyEmailBtn.textContent;
+    copyEmailBtn.textContent = '¡Copiado!';
+    setTimeout(() => copyEmailBtn.textContent = original, 2000);
+  };
+
+  card.classList.remove('hidden');
+}
+
+function hideNetflixLive() {
+  const card = document.getElementById('liveNetflixCard');
+  if (card) card.classList.add('hidden');
+}
+
 function switchSection(section) {
   currentSection = section;
 
@@ -190,13 +236,18 @@ async function loadMessages() {
     container.innerHTML = '<div class="platforms-grid" id="adminMessagesGrid"></div>';
 
     const grid = document.getElementById('adminMessagesGrid');
-    response.data.forEach(platform => {
+    const platforms = response.data;
+
+    // Actualizar Netflix Live Highlight
+    renderNetflixLive(platforms);
+
+    platforms.forEach(platform => {
       if (platform.message) {
         const card = document.createElement('div');
         card.className = 'platform-card';
         card.innerHTML = `
           <div class="platform-header">
-            <img src="${platform.platform_logo}" alt="${platform.platform_name}" class="platform-logo">
+            <img src="${platform.platform_logo}" alt="${platform.platform_name}" class="platform-logo" onerror="this.src='https://via.placeholder.com/60'">
             <div class="platform-info">
               <h3>${platform.platform_name}</h3>
               <p class="platform-email">${platform.email_address}</p>
@@ -213,6 +264,7 @@ async function loadMessages() {
     });
   } catch (error) {
     container.innerHTML = '<div class="empty-state"><p style="color: var(--error);">Error al cargar mensajes</p></div>';
+    hideNetflixLive();
   }
 }
 

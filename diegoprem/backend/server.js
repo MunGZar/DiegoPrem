@@ -111,8 +111,8 @@ app.use((err, req, res, next) => {
 
 // ==================== CRON ====================
 const scheduleEmailChecks = () => {
-  // Cambiamos a cada minuto para mayor reactividad
-  const cronPattern = '*/1 * * * *';
+  // Cambiamos a cada 30 segundos para mayor reactividad
+  const cronPattern = '*/30 * * * * *';
   console.log(`Programando verificación de correos: cada minuto (${cronPattern})`);
 
   cron.schedule(cronPattern, async () => {

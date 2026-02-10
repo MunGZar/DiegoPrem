@@ -45,12 +45,17 @@ function setupRealTimeUpdates() {
   try {
     const eventSource = new EventSource(eventUrl);
 
+    eventSource.onopen = () => {
+      console.log('✅ Conexión SSE establecida con éxito');
+    };
+
     eventSource.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
         console.log('🔔 Actualización recibida vía SSE:', data);
 
         // Recargar el dashboard sin intervención del usuario
+        // Si es una actualización de Netflix, esto refrescará el highlight
         loadMessages();
       } catch (err) {
         console.error('Error al procesar mensaje SSE:', err);
@@ -58,8 +63,11 @@ function setupRealTimeUpdates() {
     };
 
     eventSource.onerror = (error) => {
-      console.warn('⚠️ Conexión SSE perdida, reintentando automáticamente...');
-      // El navegador maneja la reconexión automática por defecto para EventSource
+      if (eventSource.readyState === EventSource.CLOSED) {
+        console.error('❌ Conexión SSE cerrada. Intentando reconectar...');
+      } else if (eventSource.readyState === EventSource.CONNECTING) {
+        console.warn('⚠️ Conexión SSE perdida, reintentando automáticamente...');
+      }
     };
   } catch (error) {
     console.error('No se pudo establecer conexión SSE:', error);
