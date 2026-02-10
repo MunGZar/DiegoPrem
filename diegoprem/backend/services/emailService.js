@@ -59,14 +59,20 @@ class EmailService {
       }
     }
 
+    // LISTA NEGRA: Palabras que suelen confundirse con códigos
+    const blacklist = ['para', 'inicio', 'sesion', 'login', 'enlace', 'click', 'haga', 'este', 'tiene'];
+    const cleanText = text.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
+
     // Si tenemos patrones específicos para la plataforma, usarlos primero
     if (config && config.patterns) {
       for (const pattern of config.patterns) {
-        const match = text.match(pattern);
+        const match = cleanText.match(pattern);
         if (match && match[1]) {
-          const code = match[1].replace(/\s/g, '');
-          console.log(`✨ Código específico de plataforma encontrado: ${code}`);
-          return code;
+          const code = match[1].replace(/[\s\xa0]/g, ''); // Limpiar espacios y NBSP
+          if (code.length >= 4 && !blacklist.includes(code.toLowerCase())) {
+            console.log(`✨ Código específico de plataforma encontrado: ${code}`);
+            return code;
+          }
         }
       }
       // Si es una plataforma conocida pero no encontramos su patrón, 
@@ -76,20 +82,23 @@ class EmailService {
 
     // Patrones genéricos de respaldo
     const genericPatterns = [
-      /(?:código|code|verification code|código de verificación)[:\s]+([A-Z0-9]{4,8})/i,
-      /(?:tu código es|your code is)[:\s]+([A-Z0-9]{4,8})/i,
-      /\b([A-Z0-9]{6})\b/,
-      /\b(\d{4,8})\b/,
+      // Prioridad a códigos numéricos tras palabra clave
+      { name: 'Keyword Digits', regex: /(?:código|code|verification code|código de verificación)[:\s]+(\d{4,8})/i },
+      // Alfanuméricos (solo si tienen al menos un número para evitar palabras como "PARA")
+      { name: 'Keyword AlphaNum', regex: /(?:código|code|verification code)[:\s]+(?=.*[0-9])([A-Z0-9]{4,8})/i },
+      // Bloques de números puros
+      { name: 'Generic Digits', regex: /\b(\d{4,8})\b/ },
     ];
 
-    for (const regex of genericPatterns) {
-      const match = text.match(regex);
+    for (const item of genericPatterns) {
+      const match = cleanText.match(item.regex);
       if (match && match[1]) {
         const val = match[1].trim();
-        // Ignorar años comunes
+        // Evitar años y palabras en la lista negra
         if (val.match(/^202[0-9]$/) || val === '3000') continue;
+        if (blacklist.includes(val.toLowerCase())) continue;
 
-        console.log(`✨ Código genérico encontrado: ${val}`);
+        console.log(`✨ Código genérico (${item.name}) encontrado: ${val}`);
         return val;
       }
     }
@@ -174,7 +183,7 @@ class EmailService {
                       };
                     }
                   } else {
-                    console.log(`ℹ️ Omitiendo correo de: ${sender} (no coincide con plataforma solicitada: ${platformKey})`);
+                    console.log(`ℹOmitiendo correo de: ${sender} (no coincide con plataforma solicitada: ${platformKey})`);
                   }
                 }
                 checkFinish();
@@ -209,7 +218,7 @@ class EmailService {
 
       for (const emailConfig of emails) {
         try {
-          console.log(`📧 Verificando correo: ${emailConfig.email_address}`);
+          console.log(`Verificando correo: ${emailConfig.email_address}`);
 
           const latestEmail = await this.fetchLatestEmail(emailConfig);
 
