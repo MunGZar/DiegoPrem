@@ -2,7 +2,7 @@
  * DiegoPrem - Configuración del Frontend
  */
 const CONFIG = {
-  API_URL: 'https://diego-prem-2t3v.vercel.app/api',
+  API_URL: '/api',
   TOKEN_KEY: 'diegoprem_token',
   USER_KEY: 'diegoprem_user'
 };
@@ -36,7 +36,7 @@ const API = {
       'Content-Type': 'application/json',
       ...options.headers
     };
-    
+
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }
@@ -48,7 +48,7 @@ const API = {
       });
 
       const data = await response.json();
-      
+
       if (!response.ok) {
         if (response.status === 401 || response.status === 403) {
           Storage.clear();
@@ -56,32 +56,32 @@ const API = {
         }
         throw new Error(data.message || 'Error en la petición');
       }
-      
+
       return data;
     } catch (error) {
       console.error('Error en API:', error);
       throw error;
     }
   },
-  
+
   get(endpoint) {
     return this.request(endpoint, { method: 'GET' });
   },
-  
+
   post(endpoint, data) {
     return this.request(endpoint, {
       method: 'POST',
       body: JSON.stringify(data)
     });
   },
-  
+
   put(endpoint, data) {
     return this.request(endpoint, {
       method: 'PUT',
       body: JSON.stringify(data)
     });
   },
-  
+
   delete(endpoint) {
     return this.request(endpoint, { method: 'DELETE' });
   }
@@ -100,12 +100,12 @@ const Utils = {
       minute: '2-digit'
     });
   },
-  
+
   timeAgo(dateString) {
     if (!dateString) return '-';
     const date = new Date(dateString);
     const seconds = Math.floor((new Date() - date) / 1000);
-    
+
     const intervals = {
       año: 31536000,
       mes: 2592000,
@@ -114,21 +114,21 @@ const Utils = {
       hora: 3600,
       minuto: 60
     };
-    
+
     for (const [name, value] of Object.entries(intervals)) {
       const interval = Math.floor(seconds / value);
       if (interval >= 1) {
         return `Hace ${interval} ${name}${interval > 1 ? (name === 'mes' ? 'es' : 's') : ''}`;
       }
     }
-    
+
     return 'Hace un momento';
   },
-  
+
   copyToClipboard(text) {
     return navigator.clipboard.writeText(text);
   },
-  
+
   showNotification(message, type = 'info') {
     console.log(`[${type.toUpperCase()}] ${message}`);
   }

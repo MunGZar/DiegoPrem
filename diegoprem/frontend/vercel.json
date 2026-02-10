@@ -1,5 +1,12 @@
 {
-  "routes": [
-    { "src": "/", "dest": "/login.html" }
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "http://18.216.30.96:3000/api/:path*"
+    },
+    {
+      "source": "/",
+      "destination": "/login.html"
+    }
   ]
 }
