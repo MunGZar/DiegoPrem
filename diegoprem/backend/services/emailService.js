@@ -16,6 +16,11 @@ class EmailService {
     return {
       'netflix': {
         senders: ['info@account.netflix.com', 'info@mailer.netflix.com'],
+        allowedKeywords: [
+          'inicio de sesión', 'login',
+          'restablecer', 'password', 'contraseña',
+          'hogar', 'household', 'ubicación', 'red wifi', 'actualizar'
+        ],
         patterns: [
           /([0-9]\s[0-9]\s[0-9]\s[0-9])/, // Formato con espacios: 2 8 0 4
           /([0-9]{4,8})/,                // Formato continuo: 1234 o 123456
@@ -36,22 +41,37 @@ class EmailService {
   /**
    * Extraer código de verificación del contenido del correo
    */
-  static extractCode(text, platform = null) {
+  static extractCode(text, subject = '', platform = null) {
     if (!text) return null;
 
     const platformKey = platform?.toLowerCase();
     const config = this.PLATFORM_CONFIGS[platformKey];
 
+    const fullText = (subject + ' ' + text).toLowerCase();
     console.log(`🔍 Extrayendo código para plataforma: ${platform || 'Genérica'}`);
+
+    // Si la plataforma tiene keywords permitidas, verificar que al menos una esté presente
+    if (config && config.allowedKeywords) {
+      const hasKeyword = config.allowedKeywords.some(keyword => fullText.includes(keyword.toLowerCase()));
+      if (!hasKeyword) {
+        console.log(`ℹ️ Omitiendo mensaje de ${platform}: No contiene palabras clave permitidas.`);
+        return null;
+      }
+    }
 
     // Si tenemos patrones específicos para la plataforma, usarlos primero
     if (config && config.patterns) {
       for (const pattern of config.patterns) {
         const match = text.match(pattern);
-        const code = match[1].replace(/\s/g, '');
-        console.log(`✨ Código específico de plataforma encontrado: ${code}`);
-        return code;
+        if (match && match[1]) {
+          const code = match[1].replace(/\s/g, '');
+          console.log(`✨ Código específico de plataforma encontrado: ${code}`);
+          return code;
+        }
       }
+      // Si es una plataforma conocida pero no encontramos su patrón, 
+      // podríamos querer saltarnos los patrones genéricos para evitar falsos positivos
+      console.log(`ℹ️ No se encontró patrón específico para ${platform}, probando genéricos como respaldo...`);
     }
 
     // Patrones genéricos de respaldo
@@ -128,14 +148,21 @@ class EmailService {
                   const platformKey = (emailConfig.platform_name || '').toLowerCase();
                   const config = this.PLATFORM_CONFIGS[platformKey];
 
+                  // Lógica de filtrado estricto por plataforma
                   let isValid = true;
-                  if (config && config.senders) {
-                    isValid = config.senders.some(s => sender.includes(s.toLowerCase()));
+                  if (platformKey) {
+                    if (config && config.senders) {
+                      isValid = config.senders.some(s => sender.includes(s.toLowerCase()));
+                    } else {
+                      // Si no tenemos configurada la plataforma en el código, 
+                      // al menos verificamos que el remitente incluya el nombre de la plataforma
+                      isValid = sender.includes(platformKey);
+                    }
                   }
 
                   if (isValid) {
                     const textContent = parsed.text || parsed.html || '';
-                    const extractedCode = this.extractCode(textContent, emailConfig.platform_name);
+                    const extractedCode = this.extractCode(textContent, parsed.subject || '', emailConfig.platform_name);
 
                     if (!latestEmail || (parsed.date > latestEmail.received_at)) {
                       latestEmail = {
@@ -147,7 +174,7 @@ class EmailService {
                       };
                     }
                   } else {
-                    console.log(`ℹ️ Omitiendo correo de: ${sender} (no coincide con ${platformKey})`);
+                    console.log(`ℹ️ Omitiendo correo de: ${sender} (no coincide con plataforma solicitada: ${platformKey})`);
                   }
                 }
                 checkFinish();
