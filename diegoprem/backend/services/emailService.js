@@ -29,7 +29,8 @@ class EmailService {
           'actualizar'
         ],
         patterns: [
-          /([0-9]\s[0-9]\s[0-9]\s[0-9])/i, // Formato con espacios: 2 8 0 4
+          /([0-9][\s\xa0]+[0-9][\s\xa0]+[0-9][\s\xa0]+[0-9])/i, // 2 8 0 4 (con cualquier espacio/NBSP)
+          /([0-9][\s\xa0]+[0-9][\s\xa0]+[0-9][\s\xa0]+[0-9][\s\xa0]+[0-9][\s\xa0]+[0-9])/i, // 1 2 3 4 5 6
           /\b(\d{4,8})\b/i // Formato continuo: 1234 o 123456
         ]
       },
@@ -49,15 +50,9 @@ class EmailService {
    */
   static get BLACKLIST_WORDS() {
     return [
-      'para',
-      'inicio',
-      'sesion',
-      'login',
-      'enlace',
-      'click',
-      'haga',
-      'este',
-      'tiene'
+      'para', 'inicio', 'sesion', 'login', 'enlace', 'click',
+      'haga', 'este', 'tiene', 'donde', 'esta', 'está', 'pero',
+      'como', 'pueden', 'será', 'nuevo', 'cuenta'
     ];
   }
 
@@ -72,7 +67,8 @@ class EmailService {
       },
       {
         name: 'Keyword AlphaNum',
-        regex: /(?:código|code|verification code)[:\s]+(?=.*[0-9])([A-Z0-9]{4,8})/i
+        // Asegura que el código de 4-8 caracteres tenga AL MENOS un número dentro de sí mismo
+        regex: /(?:código|code|verification code)[:\s]+(?=[A-Z0-9]*[0-9])[A-Z0-9]{4,8}/i
       },
       {
         name: 'Generic Digits',
@@ -120,8 +116,18 @@ class EmailService {
     // Evitar números genéricos
     if (code === '3000') return false;
 
+    // Evitar códigos que son puramente letras (sin números)
+    // Los códigos de verificación casi siempre son números o alfanuméricos
+    if (!/[0-9]/.test(code)) {
+      console.log(`ℹ️ Rechazando código puramente alfabético: ${code}`);
+      return false;
+    }
+
     // Evitar palabras de la lista negra
-    if (this.BLACKLIST_WORDS.includes(lowerCode)) return false;
+    if (this.BLACKLIST_WORDS.includes(lowerCode)) {
+      console.log(`ℹ️ Rechazando palabra en lista negra: ${code}`);
+      return false;
+    }
 
     return true;
   }
