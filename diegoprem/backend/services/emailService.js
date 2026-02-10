@@ -10,24 +10,67 @@ const Message = require('../models/Message');
 
 class EmailService {
   /**
-   * Extraer código de verificación del contenido del correo
-   * Busca patrones comunes de códigos (4-8 dígitos o alfanuméricos)
+   * Configuración de plataformas conocidas
    */
-  static extractCode(text) {
+  static get PLATFORM_CONFIGS() {
+    return {
+      'netflix': {
+        senders: ['info@account.netflix.com', 'info@mailer.netflix.com'],
+        patterns: [
+          /([0-9]\s[0-9]\s[0-9]\s[0-9])/, // Formato con espacios: 2 8 0 4
+          /([0-9]{4,8})/,                // Formato continuo: 1234 o 123456
+          /\b(\d{4,8})\b/                // Genérico limitado a 4-8
+        ]
+      },
+      'disney': {
+        senders: ['disneyplus@mail.disneyplus.com'],
+        patterns: [/\b(\d{6})\b/]
+      },
+      'hbo': {
+        senders: ['no-reply@hbomax.com'],
+        patterns: [/\b(\d{6})\b/]
+      }
+    };
+  }
+
+  /**
+   * Extraer código de verificación del contenido del correo
+   */
+  static extractCode(text, platform = null) {
     if (!text) return null;
 
-    // Patrones comunes para códigos de verificación
-    const patterns = [
+    const platformKey = platform?.toLowerCase();
+    const config = this.PLATFORM_CONFIGS[platformKey];
+
+    console.log(`🔍 Extrayendo código para plataforma: ${platform || 'Genérica'}`);
+
+    // Si tenemos patrones específicos para la plataforma, usarlos primero
+    if (config && config.patterns) {
+      for (const pattern of config.patterns) {
+        const match = text.match(pattern);
+        const code = match[1].replace(/\s/g, '');
+        console.log(`✨ Código específico de plataforma encontrado: ${code}`);
+        return code;
+      }
+    }
+
+    // Patrones genéricos de respaldo
+    const genericPatterns = [
       /(?:código|code|verification code|código de verificación)[:\s]+([A-Z0-9]{4,8})/i,
       /(?:tu código es|your code is)[:\s]+([A-Z0-9]{4,8})/i,
-      /\b([A-Z0-9]{6})\b/,  // Código de 6 caracteres
-      /\b(\d{4,8})\b/,      // Código numérico de 4-8 dígitos
+      /\b([A-Z0-9]{6})\b/,
+      /\b(\d{4,8})\b/,
     ];
 
-    for (const pattern of patterns) {
-      const match = text.match(pattern);
+    for (const regex of genericPatterns) {
+      const match = text.match(regex);
       if (match && match[1]) {
-        return match[1];
+        const val = match[1].trim();
+        // Ignorar años comunes
+        if (val.match(/^202[0-9]$/) || val === '3000') continue;
+
+        console.log(`✨ Código genérico encontrado: ${val}`);
+        return val;
       }
     }
 
@@ -35,30 +78,29 @@ class EmailService {
   }
 
   /**
-   * Conectar a un servidor IMAP y obtener el último correo
+   * Conectar a un servidor IMAP y obtener el último correo relevante
    */
   static async fetchLatestEmail(emailConfig) {
     return new Promise((resolve, reject) => {
-      // 🔍 DEBUG: Ver qué credenciales se están usando
-      const maskedPass = emailConfig.imap_password
-        ? `${emailConfig.imap_password.substring(0, 4)}...${emailConfig.imap_password.substring(emailConfig.imap_password.length - 4)} (${emailConfig.imap_password.length} chars)`
-        : 'NO PASSWORD';
-      console.log(`🔍 DEBUG IMAP Connection:`);
-      console.log(`   User: "${emailConfig.email_address}"`);
-      console.log(`   Host: "${emailConfig.imap_host}"`);
-      console.log(`   Port: ${emailConfig.imap_port || 993}`);
-      console.log(`   Password: ${maskedPass}`);
-
       const imap = new Imap({
         user: emailConfig.email_address,
         password: emailConfig.imap_password,
         host: emailConfig.imap_host,
         port: emailConfig.imap_port || 993,
         tls: true,
-        tlsOptions: { rejectUnauthorized: false }
+        tlsOptions: { rejectUnauthorized: false, servername: emailConfig.imap_host }
       });
 
       let latestEmail = null;
+      let pendingParses = 0;
+      let fetchEnded = false;
+
+      const checkFinish = () => {
+        if (fetchEnded && pendingParses === 0) {
+          imap.end();
+          resolve(latestEmail);
+        }
+      };
 
       imap.once('ready', () => {
         imap.openBox('INBOX', true, (err, box) => {
@@ -67,55 +109,65 @@ class EmailService {
             return reject(err);
           }
 
-          // Buscar el último correo
-          const f = imap.seq.fetch(`${box.messages.total}:*`, {
-            bodies: '',
-            struct: true
-          });
+          if (box.messages.total === 0) {
+            imap.end();
+            return resolve(null);
+          }
 
-          f.on('message', (msg, seqno) => {
-            msg.on('body', (stream, info) => {
-              simpleParser(stream, async (err, parsed) => {
-                if (err) {
-                  console.error('Error parseando correo:', err);
-                  return;
+          // Buscar los últimos 5 correos
+          const fetchRange = box.messages.total > 5 ? `${box.messages.total - 4}:*` : `1:*`;
+          const f = imap.seq.fetch(fetchRange, { bodies: '' });
+
+          f.on('message', (msg) => {
+            pendingParses++;
+            msg.on('body', (stream) => {
+              simpleParser(stream, (err, parsed) => {
+                pendingParses--;
+                if (!err && parsed) {
+                  const sender = (parsed.from?.text || '').toLowerCase();
+                  const platformKey = (emailConfig.platform_name || '').toLowerCase();
+                  const config = this.PLATFORM_CONFIGS[platformKey];
+
+                  let isValid = true;
+                  if (config && config.senders) {
+                    isValid = config.senders.some(s => sender.includes(s.toLowerCase()));
+                  }
+
+                  if (isValid) {
+                    const textContent = parsed.text || parsed.html || '';
+                    const extractedCode = this.extractCode(textContent, emailConfig.platform_name);
+
+                    if (!latestEmail || (parsed.date > latestEmail.received_at)) {
+                      latestEmail = {
+                        subject: parsed.subject,
+                        sender: parsed.from?.text || '',
+                        content: textContent.substring(0, 5000),
+                        extracted_code: extractedCode,
+                        received_at: parsed.date || new Date()
+                      };
+                    }
+                  } else {
+                    console.log(`ℹ️ Omitiendo correo de: ${sender} (no coincide con ${platformKey})`);
+                  }
                 }
-
-                const textContent = parsed.text || parsed.html || '';
-                const extractedCode = this.extractCode(textContent);
-
-                latestEmail = {
-                  subject: parsed.subject,
-                  sender: parsed.from?.text || '',
-                  content: textContent.substring(0, 5000), // Limitar contenido
-                  extracted_code: extractedCode,
-                  received_at: parsed.date || new Date()
-                };
+                checkFinish();
               });
             });
           });
 
           f.once('error', (err) => {
-            console.error('Error en fetch:', err);
-            imap.end();
-            reject(err);
+            fetchEnded = true;
+            checkFinish();
           });
 
           f.once('end', () => {
-            imap.end();
+            fetchEnded = true;
+            checkFinish();
           });
         });
       });
 
-      imap.once('error', (err) => {
-        console.error('Error de conexión IMAP:', err);
-        reject(err);
-      });
-
-      imap.once('end', () => {
-        resolve(latestEmail);
-      });
-
+      imap.once('error', (err) => reject(err));
       imap.connect();
     });
   }
