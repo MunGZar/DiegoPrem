@@ -1,6 +1,8 @@
 /**
  * DiegoPrem - Servicio de Correo IMAP
  * Lee correos electrónicos y extrae códigos de verificación
+ * 
+ * CORRECCIÓN: Ahora filtra correctamente palabras como "para" que no son códigos
  */
 
 const Imap = require('imap');
@@ -29,33 +31,44 @@ class EmailService {
           'actualizar'
         ],
         patterns: [
-          /(?:c[oó]digo)[^0-9]{0,80}((?:\d[\s\xa0]*){4,8})/i,
-          /([0-9][\s\xa0]+[0-9][\s\xa0]+[0-9][\s\xa0]+[0-9])/i,
-          /([0-9][\s\xa0]+[0-9][\s\xa0]+[0-9][\s\xa0]+[0-9][\s\xa0]+[0-9][\s\xa0]+[0-9])/i,
+          // Patrón 1: Buscar explícitamente "código" seguido de números
+          /(?:c[oó]digo|code|verification\s*code)[:\s]*([0-9][\s\xa0]*[0-9][\s\xa0]*[0-9][\s\xa0]*[0-9](?:[\s\xa0]*[0-9])*)/i,
+          // Patrón 2: Números con espacios/tabs entre ellos (4-8 dígitos)
+          /(?:^|[^a-záéíóúñ])([0-9][\s\xa0\t]+[0-9][\s\xa0\t]+[0-9][\s\xa0\t]+[0-9](?:[\s\xa0\t]+[0-9])*)(?:[^0-9]|$)/i,
+          // Patrón 3: Bloque de 4-8 dígitos continuos (último recurso)
           /\b(\d{4,8})\b/i
-        ]
-
+        ],
+        // Solo aceptar códigos numéricos puros
+        numericOnly: true,
+        // Longitud esperada del código
+        codeLength: [4, 6, 8]
       },
       disney: {
         senders: ['disneyplus@mail.disneyplus.com'],
-        patterns: [/\b(\d{6})\b/i]
+        patterns: [/\b(\d{6})\b/i],
+        numericOnly: true,
+        codeLength: [6]
       },
       hbo: {
         senders: ['no-reply@hbomax.com'],
-        patterns: [/\b(\d{6})\b/i]
+        patterns: [/\b(\d{6})\b/i],
+        numericOnly: true,
+        codeLength: [6]
       }
-
     };
   }
 
   /**
-   * Lista negra de palabras que no son códigos
+   * Lista negra de palabras que NO son códigos
    */
   static get BLACKLIST_WORDS() {
     return [
       'para', 'inicio', 'sesion', 'login', 'enlace', 'click',
       'haga', 'este', 'tiene', 'donde', 'esta', 'está', 'pero',
-      'como', 'pueden', 'será', 'nuevo', 'cuenta'
+      'como', 'pueden', 'será', 'sera', 'nuevo', 'cuenta', 'aqui',
+      'aquí', 'desde', 'ahora', 'más', 'mas', 'información',
+      'informacion', 'ayuda', 'servicio', 'usar', 'dispositivo',
+      'puede', 'hacer', 'netflix', 'disney', 'correo', 'email'
     ];
   }
 
@@ -66,7 +79,7 @@ class EmailService {
     return [
       {
         name: 'Keyword Digits',
-        regex: /(?:código|code|verification code|código de verificación)[:\s]+(\d{4,8})/i
+        regex: /(?:c[oó]digo|code|verification code|código de verificación)[:\s]+(\d{4,8})/i
       },
       {
         name: 'Keyword AlphaNum',
@@ -105,29 +118,66 @@ class EmailService {
   /**
    * Verifica si un código es válido
    * @param {string} code - Código a validar
+   * @param {Object} config - Configuración de plataforma (opcional)
    * @returns {boolean}
    */
-  static isValidCode(code) {
-    if (!code || code.length < 4) return false;
+  static isValidCode(code, config = null) {
+    if (!code) return false;
 
-    const lowerCode = code.toLowerCase();
+    const trimmedCode = code.trim();
+    const lowerCode = trimmedCode.toLowerCase();
+
+    // Verificar longitud mínima
+    if (trimmedCode.length < 4) {
+      console.log(`ℹ️ Código muy corto: ${code}`);
+      return false;
+    }
+
+    // Si la plataforma requiere solo números, verificar
+    if (config && config.numericOnly) {
+      const cleanNumeric = trimmedCode.replace(/[\s\xa0\t]/g, '');
+      if (!/^\d+$/.test(cleanNumeric)) {
+        console.log(`ℹ️ Rechazando código no numérico para plataforma que requiere solo números: ${code}`);
+        return false;
+      }
+
+      // Verificar longitud esperada si está configurada
+      if (config.codeLength && config.codeLength.length > 0) {
+        if (!config.codeLength.includes(cleanNumeric.length)) {
+          console.log(`ℹ️ Longitud incorrecta (${cleanNumeric.length}). Esperada: ${config.codeLength.join(' o ')}`);
+          return false;
+        }
+      }
+    }
 
     // Evitar años comunes
-    if (/^20[0-9]{2}$/.test(code)) return false;
+    if (/^20[0-9]{2}$/.test(trimmedCode)) {
+      console.log(`ℹ️ Rechazando año: ${code}`);
+      return false;
+    }
 
-    // Evitar números genéricos
-    if (code === '3000') return false;
-
-    // Evitar códigos que son puramente letras (sin números)
-    // Los códigos de verificación casi siempre son números o alfanuméricos
-    if (!/[0-9]/.test(code)) {
-      console.log(`ℹ️ Rechazando código puramente alfabético: ${code}`);
+    // Evitar números genéricos comunes
+    const commonNumbers = ['1000', '2000', '3000', '4000', '5000', '1234', '4321', '0000'];
+    if (commonNumbers.includes(trimmedCode)) {
+      console.log(`ℹ️ Rechazando número común: ${code}`);
       return false;
     }
 
     // Evitar palabras de la lista negra
     if (this.BLACKLIST_WORDS.includes(lowerCode)) {
       console.log(`ℹ️ Rechazando palabra en lista negra: ${code}`);
+      return false;
+    }
+
+    // Evitar palabras puramente alfabéticas
+    if (/^[a-záéíóúñ]+$/i.test(trimmedCode)) {
+      console.log(`ℹ️ Rechazando palabra alfabética: ${code}`);
+      return false;
+    }
+
+    // Códigos válidos deben tener al menos un número
+    if (!/[0-9]/.test(trimmedCode)) {
+      console.log(`ℹ️ Rechazando código sin números: ${code}`);
       return false;
     }
 
@@ -144,15 +194,23 @@ class EmailService {
   static extractPlatformCode(text, config, platform) {
     if (!config || !config.patterns) return null;
 
-    for (const pattern of config.patterns) {
-      const match = text.match(pattern);
-      if (match && match[1]) {
-        // Limpiar espacios y NBSP
-        const code = match[1].replace(/[\s\xa0]/g, '');
+    console.log(`🔍 Buscando código con patrones específicos de ${platform}...`);
 
-        if (this.isValidCode(code)) {
-          console.log(`✨ Código específico de ${platform} encontrado: ${code}`);
-          return code;
+    for (let i = 0; i < config.patterns.length; i++) {
+      const pattern = config.patterns[i];
+      const matches = text.matchAll(new RegExp(pattern.source, pattern.flags + 'g'));
+
+      for (const match of matches) {
+        if (match && match[1]) {
+          // Limpiar espacios, tabs y NBSP
+          const code = match[1].replace(/[\s\xa0\t]/g, '');
+
+          console.log(`   Patrón ${i + 1} encontró: "${match[1]}" → limpio: "${code}"`);
+
+          if (this.isValidCode(code, config)) {
+            console.log(`✨ Código específico de ${platform} encontrado: ${code}`);
+            return code;
+          }
         }
       }
     }
@@ -163,15 +221,20 @@ class EmailService {
   /**
    * Intenta extraer código usando patrones genéricos
    * @param {string} text - Texto limpio del correo
+   * @param {Object} config - Configuración de plataforma (opcional)
    * @returns {string|null} Código extraído o null
    */
-  static extractGenericCode(text) {
+  static extractGenericCode(text, config = null) {
+    console.log(`🔍 Intentando patrones genéricos...`);
+
     for (const pattern of this.GENERIC_PATTERNS) {
       const match = text.match(pattern.regex);
       if (match && match[1]) {
         const code = match[1].trim();
 
-        if (this.isValidCode(code)) {
+        console.log(`   ${pattern.name} encontró: "${code}"`);
+
+        if (this.isValidCode(code, config)) {
           console.log(`✨ Código genérico (${pattern.name}) encontrado: ${code}`);
           return code;
         }
@@ -195,14 +258,18 @@ class EmailService {
     const config = this.PLATFORM_CONFIGS[platformKey];
     const fullText = `${subject} ${text}`;
 
-    console.log(`🔍 Extrayendo código para plataforma: ${platform || 'Genérica'}`);
+    console.log(`\n${'='.repeat(60)}`);
+    console.log(`🔍 Extrayendo código para: ${platform || 'Genérica'}`);
+    console.log(`${'='.repeat(60)}`);
 
     // Verificar palabras clave permitidas si la plataforma las tiene
     if (config && config.allowedKeywords) {
       if (!this.hasAllowedKeywords(fullText, config.allowedKeywords)) {
-        console.log(`ℹ️ Omitiendo mensaje de ${platform}: No contiene palabras clave permitidas.`);
+        console.log(`❌ Omitiendo: No contiene palabras clave permitidas.`);
+        console.log(`${'='.repeat(60)}\n`);
         return null;
       }
+      console.log(`✓ Contiene palabras clave permitidas`);
     }
 
     const cleanedText = this.cleanText(text);
@@ -210,13 +277,24 @@ class EmailService {
     // 1. Intentar con patrones específicos de plataforma
     if (config) {
       const platformCode = this.extractPlatformCode(cleanedText, config, platform);
-      if (platformCode) return platformCode;
+      if (platformCode) {
+        console.log(`${'='.repeat(60)}\n`);
+        return platformCode;
+      }
 
-      console.log(`ℹ️ No se encontró patrón específico para ${platform}, probando genéricos...`);
+      console.log(`ℹ️ No se encontró con patrones específicos, probando genéricos...`);
     }
 
-    // 2. Intentar con patrones genéricos
-    return this.extractGenericCode(cleanedText);
+    // 2. Intentar con patrones genéricos (solo si no es una plataforma con numericOnly)
+    if (!config || !config.numericOnly) {
+      const genericCode = this.extractGenericCode(cleanedText, config);
+      console.log(`${'='.repeat(60)}\n`);
+      return genericCode;
+    }
+
+    console.log(`❌ No se encontró código válido`);
+    console.log(`${'='.repeat(60)}\n`);
+    return null;
   }
 
   /**
