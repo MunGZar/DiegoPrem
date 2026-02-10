@@ -9,13 +9,13 @@ document.addEventListener('DOMContentLoaded', () => {
     window.location.href = 'login.html';
     return;
   }
-  
+
   const user = Storage.getUser();
   if (user.role !== 'admin') {
     window.location.href = 'dashboard.html';
     return;
   }
-  
+
   // Navigation
   document.querySelectorAll('.nav-item').forEach(item => {
     item.addEventListener('click', (e) => {
@@ -24,33 +24,66 @@ document.addEventListener('DOMContentLoaded', () => {
       switchSection(section);
     });
   });
-  
+
   // Buttons
   document.getElementById('addNewBtn').addEventListener('click', openAddForm);
   document.getElementById('checkAllEmailsBtn').addEventListener('click', checkAllEmails);
   document.getElementById('logoutBtn').addEventListener('click', logout);
   document.getElementById('modalClose').addEventListener('click', closeModal);
   document.getElementById('modalOverlay').addEventListener('click', closeModal);
-  
+
   loadSection('emails');
+
+  // Configurar actualizaciones en tiempo real (SSE)
+  setupRealTimeUpdates();
 });
+
+/**
+ * Configura la conexión de EventSource para actualizaciones en tiempo real
+ */
+function setupRealTimeUpdates() {
+  const eventUrl = `${CONFIG.API_URL}/events`;
+  console.log(`📡 Admin: Conectando a eventos en tiempo real: ${eventUrl}`);
+
+  try {
+    const eventSource = new EventSource(eventUrl);
+
+    eventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        console.log('🔔 Admin: Actualización recibida vía SSE:', data);
+
+        // Recargar la sección actual para mostrar los datos nuevos
+        loadSection(currentSection);
+      } catch (err) {
+        console.error('Error al procesar mensaje SSE:', err);
+      }
+    };
+
+    eventSource.onerror = (error) => {
+      console.warn('⚠️ Admin: Conexión SSE perdida, reintentando...');
+    };
+  } catch (error) {
+    console.error('No se pudo establecer conexión SSE en Admin:', error);
+  }
+}
 
 function switchSection(section) {
   currentSection = section;
-  
+
   document.querySelectorAll('.nav-item').forEach(item => {
     item.classList.remove('active');
   });
   document.querySelector(`[data-section="${section}"]`).classList.add('active');
-  
+
   document.querySelectorAll('.content-section').forEach(sec => {
     sec.classList.remove('active');
   });
   document.getElementById(`${section}Section`).classList.add('active');
-  
+
   const titles = { emails: 'Gestión de Correos', users: 'Gestión de Usuarios', messages: 'Gestión de Mensajes' };
   document.getElementById('sectionTitle').textContent = titles[section];
-  
+
   loadSection(section);
 }
 
@@ -63,11 +96,11 @@ async function loadSection(section) {
 async function loadEmails() {
   const tbody = document.querySelector('#emailsTable tbody');
   tbody.innerHTML = '<tr class="loading-row"><td colspan="8" class="text-center"><div class="loader-small"></div><p>Cargando...</p></td></tr>';
-  
+
   try {
     const response = await API.get('/admin/emails');
     tbody.innerHTML = '';
-    
+
     response.data.forEach(email => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
@@ -110,11 +143,11 @@ async function loadEmails() {
 async function loadUsers() {
   const tbody = document.querySelector('#usersTable tbody');
   tbody.innerHTML = '<tr class="loading-row"><td colspan="7" class="text-center"><div class="loader-small"></div><p>Cargando...</p></td></tr>';
-  
+
   try {
     const response = await API.get('/admin/users');
     tbody.innerHTML = '';
-    
+
     response.data.forEach(user => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
@@ -151,11 +184,11 @@ async function loadUsers() {
 async function loadMessages() {
   const container = document.getElementById('messagesContent');
   container.innerHTML = '<div class="loading-state"><div class="loader"></div><p>Cargando mensajes...</p></div>';
-  
+
   try {
     const response = await API.get('/messages');
     container.innerHTML = '<div class="platforms-grid" id="adminMessagesGrid"></div>';
-    
+
     const grid = document.getElementById('adminMessagesGrid');
     response.data.forEach(platform => {
       if (platform.message) {
@@ -187,7 +220,7 @@ function openAddForm() {
   const modal = document.getElementById('formModal');
   const modalTitle = document.getElementById('modalTitle');
   const form = document.getElementById('dynamicForm');
-  
+
   if (currentSection === 'emails') {
     modalTitle.textContent = 'Agregar Nuevo Correo';
     form.innerHTML = `
@@ -240,7 +273,7 @@ function openAddForm() {
       }
     };
   }
-  
+
   modal.classList.remove('hidden');
 }
 

@@ -249,6 +249,12 @@ class AdminController {
 
       const result = await EmailService.checkSingleEmail(id);
 
+      // Notificar a todos los clientes que hubo una actualización
+      const broadcast = req.app.get('broadcastUpdate');
+      if (broadcast) {
+        broadcast({ type: 'update', source: 'manual', emailId: id });
+      }
+
       res.json({
         success: true,
         message: 'Verificación completada',
@@ -270,6 +276,12 @@ class AdminController {
   static async checkAllEmails(req, res) {
     try {
       const results = await EmailService.checkAllEmails();
+
+      // Notificar a todos los clientes que hubo una actualización
+      const broadcast = req.app.get('broadcastUpdate');
+      if (broadcast) {
+        broadcast({ type: 'update', source: 'manual-all' });
+      }
 
       res.json({
         success: true,

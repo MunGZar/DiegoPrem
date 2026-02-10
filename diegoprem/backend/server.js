@@ -14,6 +14,22 @@ const EmailService = require('./services/emailService');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// ==================== SSE (Server-Sent Events) ====================
+let clients = [];
+
+/**
+ * Envía una notificación a todos los clientes conectados via SSE
+ * @param {Object} data - Datos a enviar
+ */
+const broadcastUpdate = (data) => {
+  clients.forEach(client => {
+    client.res.write(`data: ${JSON.stringify(data)}\n\n`);
+  });
+};
+
+// Exponer broadcast a otros módulos si es necesario (inyectando en app)
+app.set('broadcastUpdate', broadcastUpdate);
+
 // ==================== CORS (FIX DEFINITIVO) ====================
 const corsOptions = {
   origin: true, // refleja automáticamente el Origin entrante
@@ -54,6 +70,31 @@ app.use('/api/auth', authRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/admin', adminRoutes);
 
+// Endpoint para eventos en tiempo real (SSE)
+app.get('/api/events', (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+
+  const clientId = Date.now();
+  const newClient = { id: clientId, res };
+  clients.push(newClient);
+
+  console.log(`📡 Cliente SSE conectado: ${clientId} (Total: ${clients.length})`);
+
+  // Mantener la conexión viva con un ping cada 15s
+  const keepAlive = setInterval(() => {
+    res.write(': keep-alive\n\n');
+  }, 15000);
+
+  req.on('close', () => {
+    clearInterval(keepAlive);
+    clients = clients.filter(c => c.id !== clientId);
+    console.log(`📡 Cliente SSE desconectado: ${clientId} (Total: ${clients.length})`);
+  });
+});
+
 // ==================== ERRORES ====================
 app.use((req, res) => {
   res.status(404).json({ success: false, message: 'Ruta no encontrada' });
@@ -70,14 +111,18 @@ app.use((err, req, res, next) => {
 
 // ==================== CRON ====================
 const scheduleEmailChecks = () => {
-  const cronPattern = process.env.EMAIL_CHECK_INTERVAL || '*/5 * * * *';
-  console.log(`📅 Programando verificación de correos: ${cronPattern}`);
+  // Cambiamos a cada minuto para mayor reactividad
+  const cronPattern = '*/1 * * * *';
+  console.log(`Programando verificación de correos: cada minuto (${cronPattern})`);
 
   cron.schedule(cronPattern, async () => {
     console.log('⏰ Ejecutando verificación automática de correos...');
     try {
       const results = await EmailService.checkAllEmails();
-      console.log(`✅ Verificación completada: ${results.length} correos procesados`);
+      console.log(`✅ Verificación completada: ${results.length} cuentas procesadas`);
+
+      // Notificar al frontend que hubo una actualización
+      broadcastUpdate({ type: 'update', count: results.length, timestamp: new Date() });
     } catch (error) {
       console.error('❌ Error en verificación automática:', error);
     }

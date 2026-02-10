@@ -26,9 +26,45 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Cargar datos iniciales
   await loadMessages();
 
-  // Auto-refresh cada 30 segundos
-  setInterval(loadMessages, 30000);
+  // Configurar actualizaciones en tiempo real (SSE)
+  setupRealTimeUpdates();
+
+  // Auto-refresh de respaldo cada 2 minutos (menos frecuente gracias a SSE)
+  setInterval(loadMessages, 120000);
 });
+
+/**
+ * Configura la conexión de EventSource para actualizaciones en tiempo real
+ */
+function setupRealTimeUpdates() {
+  // Construir la URL de eventos (usando el mismo origen que la API_URL)
+  const eventUrl = `${CONFIG.API_URL}/events`;
+
+  console.log(`📡 Conectando a eventos en tiempo real: ${eventUrl}`);
+
+  try {
+    const eventSource = new EventSource(eventUrl);
+
+    eventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        console.log('🔔 Actualización recibida vía SSE:', data);
+
+        // Recargar el dashboard sin intervención del usuario
+        loadMessages();
+      } catch (err) {
+        console.error('Error al procesar mensaje SSE:', err);
+      }
+    };
+
+    eventSource.onerror = (error) => {
+      console.warn('⚠️ Conexión SSE perdida, reintentando automáticamente...');
+      // El navegador maneja la reconexión automática por defecto para EventSource
+    };
+  } catch (error) {
+    console.error('No se pudo establecer conexión SSE:', error);
+  }
+}
 
 async function loadMessages() {
   const grid = document.getElementById('platformsGrid');
