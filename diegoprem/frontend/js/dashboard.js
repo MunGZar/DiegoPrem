@@ -11,10 +11,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.location.href = 'login.html';
     return;
   }
-  
+
   const user = Storage.getUser();
   document.getElementById('usernameDisplay').textContent = user.username;
-  
+
   // Event listeners
   document.getElementById('refreshButton').addEventListener('click', loadMessages);
   document.getElementById('searchInput').addEventListener('input', filterPlatforms);
@@ -22,10 +22,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('logoutButton').addEventListener('click', logout);
   document.getElementById('modalClose')?.addEventListener('click', closeModal);
   document.getElementById('modalOverlay')?.addEventListener('click', closeModal);
-  
+
   // Cargar datos iniciales
   await loadMessages();
-  
+
   // Auto-refresh cada 30 segundos
   setInterval(loadMessages, 30000);
 });
@@ -34,20 +34,21 @@ async function loadMessages() {
   const grid = document.getElementById('platformsGrid');
   const loadingState = document.getElementById('loadingState');
   const emptyState = document.getElementById('emptyState');
-  
+
+  // Mostrar estado de carga
   loadingState?.classList.remove('hidden');
   emptyState?.classList.add('hidden');
   grid.innerHTML = '';
-  grid.appendChild(loadingState);
-  
+
   try {
     const response = await API.get('/messages');
     allPlatforms = response.data;
-    
-    if (allPlatforms.length === 0) {
-      grid.innerHTML = '';
-      emptyState.classList.remove('hidden');
-      grid.appendChild(emptyState);
+
+    // Ocultar carga independientemente del resultado
+    loadingState?.classList.add('hidden');
+
+    if (!allPlatforms || allPlatforms.length === 0) {
+      emptyState?.classList.remove('hidden');
       hideNetflixLive();
     } else {
       renderNetflixLive(allPlatforms);
@@ -56,6 +57,7 @@ async function loadMessages() {
     }
   } catch (error) {
     console.error('Error cargando mensajes:', error);
+    loadingState?.classList.add('hidden');
     showError('Error al cargar los mensajes');
     hideNetflixLive();
   }
@@ -64,7 +66,7 @@ async function loadMessages() {
 function renderPlatforms(platforms) {
   const grid = document.getElementById('platformsGrid');
   grid.innerHTML = '';
-  
+
   platforms.forEach(platform => {
     const card = createPlatformCard(platform);
     grid.appendChild(card);
@@ -74,10 +76,10 @@ function renderPlatforms(platforms) {
 function createPlatformCard(platform) {
   const card = document.createElement('div');
   card.className = 'platform-card';
-  
+
   const hasMessage = platform.message !== null;
   const code = hasMessage ? platform.message.extracted_code : null;
-  
+
   card.innerHTML = `
     <div class="platform-header">
       <img src="${platform.platform_logo || 'https://via.placeholder.com/60'}" 
@@ -120,7 +122,7 @@ function createPlatformCard(platform) {
       `}
     </div>
   `;
-  
+
   return card;
 }
 
@@ -135,7 +137,7 @@ async function copyCode(code, button) {
       ¡Copiado!
     `;
     button.classList.add('copied');
-    
+
     setTimeout(() => {
       button.innerHTML = originalHTML;
       button.classList.remove('copied');
@@ -149,10 +151,10 @@ async function viewMessage(messageId) {
   try {
     const response = await API.get(`/messages/${messageId}`);
     const message = response.data;
-    
+
     const modal = document.getElementById('messageModal');
     const modalBody = document.getElementById('modalBody');
-    
+
     modalBody.innerHTML = `
       <div style="display: flex; flex-direction: column; gap: 1.5rem;">
         <div>
@@ -179,7 +181,7 @@ async function viewMessage(messageId) {
         </div>
       </div>
     `;
-    
+
     modal.classList.remove('hidden');
   } catch (error) {
     console.error('Error cargando mensaje:', error);
@@ -192,7 +194,7 @@ function closeModal() {
 
 function filterPlatforms(e) {
   const searchTerm = e.target.value.toLowerCase();
-  const filtered = allPlatforms.filter(p => 
+  const filtered = allPlatforms.filter(p =>
     p.platform_name.toLowerCase().includes(searchTerm) ||
     p.email_address.toLowerCase().includes(searchTerm)
   );
@@ -203,7 +205,7 @@ async function loadStats() {
   try {
     const response = await API.get('/messages/stats/summary');
     const stats = response.data;
-    
+
     document.getElementById('totalPlatforms').textContent = allPlatforms.length;
     document.getElementById('totalEmails').textContent = stats.total_active_emails || 0;
     document.getElementById('lastMessage').textContent = Utils.timeAgo(stats.last_message_received);
@@ -276,14 +278,14 @@ function renderNetflixLive(platforms) {
     // Remover listeners previos
     copyCodeBtn.replaceWith(copyCodeBtn.cloneNode(true));
     const newCopyCodeBtn = document.getElementById('copyNetflixCode');
-    
+
     newCopyCodeBtn.addEventListener('click', async () => {
       try {
         await Utils.copyToClipboard(netflix.message.extracted_code);
         const originalText = newCopyCodeBtn.textContent;
         newCopyCodeBtn.textContent = '✓ ¡Copiado!';
         newCopyCodeBtn.style.transform = 'scale(1.05)';
-        
+
         setTimeout(() => {
           newCopyCodeBtn.textContent = originalText;
           newCopyCodeBtn.style.transform = 'scale(1)';
@@ -304,14 +306,14 @@ function renderNetflixLive(platforms) {
     // Remover listeners previos
     copyEmailBtn.replaceWith(copyEmailBtn.cloneNode(true));
     const newCopyEmailBtn = document.getElementById('copyNetflixEmail');
-    
+
     newCopyEmailBtn.addEventListener('click', async () => {
       try {
         await Utils.copyToClipboard(netflix.email_address);
         const originalText = newCopyEmailBtn.textContent;
         newCopyEmailBtn.textContent = '✓ ¡Copiado!';
         newCopyEmailBtn.style.transform = 'scale(1.05)';
-        
+
         setTimeout(() => {
           newCopyEmailBtn.textContent = originalText;
           newCopyEmailBtn.style.transform = 'scale(1)';

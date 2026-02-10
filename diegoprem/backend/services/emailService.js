@@ -19,8 +19,9 @@ class EmailService {
       netflix: {
         senders: ['info@account.netflix.com', 'info@mailer.netflix.com'],
         allowedKeywords: [
-          'inicio de sesión',
           'login',
+          'sesión',
+          'sesion',
           'restablecer',
           'password',
           'contraseña',
