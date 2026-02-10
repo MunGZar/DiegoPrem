@@ -29,10 +29,12 @@ class EmailService {
           'actualizar'
         ],
         patterns: [
-          /([0-9][\s\xa0]+[0-9][\s\xa0]+[0-9][\s\xa0]+[0-9])/i, // 2 8 0 4 (con cualquier espacio/NBSP)
-          /([0-9][\s\xa0]+[0-9][\s\xa0]+[0-9][\s\xa0]+[0-9][\s\xa0]+[0-9][\s\xa0]+[0-9])/i, // 1 2 3 4 5 6
-          /\b(\d{4,8})\b/i // Formato continuo: 1234 o 123456
+          /(?:c[oó]digo)[^0-9]{0,80}((?:\d[\s\xa0]*){4,8})/i,
+          /([0-9][\s\xa0]+[0-9][\s\xa0]+[0-9][\s\xa0]+[0-9])/i,
+          /([0-9][\s\xa0]+[0-9][\s\xa0]+[0-9][\s\xa0]+[0-9][\s\xa0]+[0-9][\s\xa0]+[0-9])/i,
+          /\b(\d{4,8})\b/i
         ]
+
       },
       disney: {
         senders: ['disneyplus@mail.disneyplus.com'],
@@ -42,6 +44,7 @@ class EmailService {
         senders: ['no-reply@hbomax.com'],
         patterns: [/\b(\d{6})\b/i]
       }
+
     };
   }
 
@@ -67,8 +70,7 @@ class EmailService {
       },
       {
         name: 'Keyword AlphaNum',
-        // Asegura que el código de 4-8 caracteres tenga AL MENOS un número dentro de sí mismo
-        regex: /(?:código|code|verification code)[:\s]+(?=[A-Z0-9]*[0-9])[A-Z0-9]{4,8}/i
+        regex: /(?:c[oó]digo|code|verification code)[:\s]+((?=[A-Z0-9]*\d)[A-Z0-9]{4,8})/i
       },
       {
         name: 'Generic Digits',
