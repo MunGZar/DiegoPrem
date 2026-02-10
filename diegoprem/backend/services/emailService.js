@@ -39,6 +39,16 @@ class EmailService {
    */
   static async fetchLatestEmail(emailConfig) {
     return new Promise((resolve, reject) => {
+      // 🔍 DEBUG: Ver qué credenciales se están usando
+      const maskedPass = emailConfig.imap_password
+        ? `${emailConfig.imap_password.substring(0, 4)}...${emailConfig.imap_password.substring(emailConfig.imap_password.length - 4)} (${emailConfig.imap_password.length} chars)`
+        : 'NO PASSWORD';
+      console.log(`🔍 DEBUG IMAP Connection:`);
+      console.log(`   User: "${emailConfig.email_address}"`);
+      console.log(`   Host: "${emailConfig.imap_host}"`);
+      console.log(`   Port: ${emailConfig.imap_port || 993}`);
+      console.log(`   Password: ${maskedPass}`);
+
       const imap = new Imap({
         user: emailConfig.email_address,
         password: emailConfig.imap_password,
@@ -121,9 +131,9 @@ class EmailService {
       for (const emailConfig of emails) {
         try {
           console.log(`📧 Verificando correo: ${emailConfig.email_address}`);
-          
+
           const latestEmail = await this.fetchLatestEmail(emailConfig);
-          
+
           if (latestEmail) {
             // Guardar o actualizar mensaje
             await Message.createOrUpdate({
@@ -168,23 +178,23 @@ class EmailService {
   static async checkSingleEmail(emailId) {
     try {
       const emailConfig = await Email.findById(emailId);
-      
+
       if (!emailConfig) {
         throw new Error('Correo no encontrado');
       }
 
       console.log(`📧 Verificando correo: ${emailConfig.email_address}`);
-      
+
       const latestEmail = await this.fetchLatestEmail(emailConfig);
-      
+
       if (latestEmail) {
         await Message.createOrUpdate({
           email_id: emailConfig.id,
           ...latestEmail
         });
-        
+
         await Email.updateLastChecked(emailConfig.id);
-        
+
         return {
           success: true,
           message: 'Correo verificado exitosamente',
