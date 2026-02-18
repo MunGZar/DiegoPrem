@@ -125,22 +125,34 @@
         <div class="admin-content">
             <!-- LIVE NETFLIX HIGHLIGHT -->
             <div class="live-highlight hidden" id="liveNetflixCard" style="margin-bottom: 2rem;">
+                <!-- LEFT -->
                 <div class="live-left">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/0/08/Netflix_2015_logo.svg"
+                    <img id="liveNetflixLogo"
+                        src="https://upload.wikimedia.org/wikipedia/commons/0/08/Netflix_2015_logo.svg"
                         class="live-logo">
                     <div>
-                        <h3 style="color: white; margin: 0;">Netflix</h3>
-                        <p style="color: rgba(255,255,255,0.7); margin: 0; font-size: 0.85rem;">Último código recibido
-                        </p>
+                        <h3 id="liveNetflixName">Netflix</h3>
+                        <p>Último código recibido</p>
                     </div>
                 </div>
+
+                <!-- CENTER -->
                 <div class="live-center">
                     <div class="live-code" id="liveNetflixCode">------</div>
-                    <div class="live-email" id="liveNetflixEmail">correo@ejemplo.com</div>
+                    <div class="live-email" id="liveNetflixEmail">
+                        correo@ejemplo.com
+                    </div>
                 </div>
+
+                <!-- RIGHT -->
                 <div class="live-right">
-                    <button class="live-btn" id="copyNetflixCode">Copiar código</button>
-                    <button class="live-btn secondary" id="copyNetflixEmail">Copiar correo</button>
+                    <button class="live-btn" id="copyNetflixCode">
+                        Copiar código
+                    </button>
+
+                    <button class="live-btn secondary" id="copyNetflixEmail">
+                        Copiar correo
+                    </button>
                 </div>
             </div>
 

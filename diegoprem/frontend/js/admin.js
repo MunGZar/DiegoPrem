@@ -134,6 +134,13 @@ function renderNetflixLive(platforms) {
   // Actualizar código y email
   document.getElementById('liveNetflixCode').textContent = netflix.message.extracted_code;
   document.getElementById('liveNetflixEmail').textContent = netflix.email_address;
+  document.getElementById('liveNetflixName').textContent = netflix.platform_name;
+
+  const logoImg = document.getElementById('liveNetflixLogo');
+  if (logoImg) {
+    logoImg.src = netflix.platform_logo || 'https://upload.wikimedia.org/wikipedia/commons/0/08/Netflix_2015_logo.svg';
+    logoImg.alt = netflix.platform_name;
+  }
 
   // Configurar botones
   const copyCodeBtn = document.getElementById('copyNetflixCode');
