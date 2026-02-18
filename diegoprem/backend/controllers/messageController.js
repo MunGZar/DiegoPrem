@@ -13,36 +13,27 @@ class MessageController {
   static async getLatestMessages(req, res) {
     try {
       const messages = await Message.getLatestMessages();
-      
-      // Agrupar por plataforma
-      const groupedByPlatform = {};
-      
-      messages.forEach(msg => {
-        if (!groupedByPlatform[msg.platform_name]) {
-          groupedByPlatform[msg.platform_name] = {
-            email_id: msg.email_id,
-            platform_name: msg.platform_name,
-            platform_logo: msg.platform_logo,
-            email_address: msg.email_address,
-            message: null
-          };
+
+      // Mapeamos los resultados para que el frontend reciba una lista plana
+      // donde cada objeto representa una "tarjeta" de plataforma con su mensaje específico
+      const formattedData = messages.map(msg => ({
+        email_id: msg.email_id,
+        platform_name: msg.platform_name,
+        platform_logo: msg.platform_logo,
+        email_address: msg.email_address,
+        message: {
+          id: msg.message_id,
+          subject: msg.subject,
+          sender: msg.sender,
+          content: msg.content,
+          extracted_code: msg.extracted_code,
+          received_at: msg.received_at
         }
-        
-        if (msg.message_id && !groupedByPlatform[msg.platform_name].message) {
-          groupedByPlatform[msg.platform_name].message = {
-            id: msg.message_id,
-            subject: msg.subject,
-            sender: msg.sender,
-            content: msg.content,
-            extracted_code: msg.extracted_code,
-            received_at: msg.received_at
-          };
-        }
-      });
+      }));
 
       res.json({
         success: true,
-        data: Object.values(groupedByPlatform)
+        data: formattedData
       });
 
     } catch (error) {
@@ -60,7 +51,7 @@ class MessageController {
   static async searchByPlatform(req, res) {
     try {
       const { platform } = req.params;
-      
+
       const messages = await Message.findByPlatform(platform);
 
       res.json({
@@ -83,7 +74,7 @@ class MessageController {
   static async getMessageById(req, res) {
     try {
       const { id } = req.params;
-      
+
       const message = await Message.findById(id);
 
       if (!message) {

@@ -312,9 +312,16 @@ async function loadStats() {
     const response = await API.get('/messages/stats/summary');
     const stats = response.data;
 
+    // allPlatforms ahora contiene una lista de mensajes planos
     document.getElementById('totalPlatforms').textContent = allPlatforms.length;
     document.getElementById('totalEmails').textContent = stats.total_active_emails || 0;
-    document.getElementById('lastMessage').textContent = Utils.timeAgo(stats.last_message_received);
+
+    if (stats.last_message_received) {
+      document.getElementById('lastMessage').textContent = Utils.timeAgo(stats.last_message_received);
+    } else {
+      document.getElementById('lastMessage').textContent = 'Sin mensajes';
+    }
+
     document.getElementById('statsSection').classList.remove('hidden');
   } catch (error) {
     console.error('Error cargando stats:', error);

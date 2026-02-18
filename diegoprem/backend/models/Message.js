@@ -14,15 +14,29 @@ class Message {
     try {
       const { email_id, subject, sender, content, extracted_code, received_at } = messageData;
 
-      // Eliminar mensaje anterior de este correo
-      await pool.query('DELETE FROM messages WHERE email_id = ?', [email_id]);
-
-      // Insertar nuevo mensaje
+      // Insertar nuevo mensaje (ya no eliminamos el anterior para mantener historial)
       const [result] = await pool.query(
         `INSERT INTO messages (email_id, subject, sender, content, extracted_code, received_at) 
          VALUES (?, ?, ?, ?, ?, ?)`,
         [email_id, subject, sender, content, extracted_code, received_at]
       );
+
+      // Limpieza: Mantener solo los últimos 100 mensajes en total para evitar saturación
+      // Esto es opcional pero recomendado en sistemas de alta frecuencia
+      try {
+        await pool.query(`
+          DELETE FROM messages 
+          WHERE id NOT IN (
+            SELECT id FROM (
+              SELECT id FROM messages 
+              ORDER BY received_at DESC 
+              LIMIT 100
+            ) as t
+          )
+        `);
+      } catch (cleanupError) {
+        console.error('Error durante limpieza de mensajes:', cleanupError);
+      }
 
       return { id: result.insertId, ...messageData };
     } catch (error) {
@@ -55,6 +69,7 @@ class Message {
    */
   static async getLatestMessages() {
     try {
+      // Obtenemos los últimos mensajes de los últimos 7 días, limitados a 50
       const [rows] = await pool.query(`
         SELECT 
           e.id AS email_id,
@@ -68,9 +83,10 @@ class Message {
           m.extracted_code,
           m.received_at
         FROM emails e
-        LEFT JOIN messages m ON e.id = m.email_id
+        JOIN messages m ON e.id = m.email_id
         WHERE e.active = TRUE
-        ORDER BY e.platform_name ASC, m.received_at DESC
+        ORDER BY m.received_at DESC
+        LIMIT 50
       `);
       return rows;
     } catch (error) {
