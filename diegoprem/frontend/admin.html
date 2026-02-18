@@ -205,11 +205,65 @@
 
             <!-- Messages Section -->
             <section id="messagesSection" class="content-section">
-                <div id="messagesContent">
-                    <div class="loading-state">
-                        <div class="loader"></div>
-                        <p>Cargando mensajes recibidos...</p>
+                <!-- Filters Bar -->
+                <div class="filters-bar">
+                    <div class="search-wrapper">
+                        <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <path d="m21 21-4.35-4.35"></path>
+                        </svg>
+                        <input type="text" id="messageSearch" placeholder="Buscar por código, email o plataforma..."
+                            aria-label="Buscar mensajes">
                     </div>
+
+                    <div class="filter-group">
+                        <select id="platformFilter" class="filter-select">
+                            <option value="all">Todas las plataformas</option>
+                            <!-- Opciones cargadas dinámicamente -->
+                        </select>
+                    </div>
+
+                    <div class="bulk-actions">
+                        <button class="btn-secondary btn-sm" id="clearSearch">
+                            Limpiar Filtros
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Messages Table -->
+                <div class="table-container">
+                    <table class="data-table" id="messagesTable">
+                        <thead>
+                            <tr>
+                                <th>Plataforma</th>
+                                <th>Destinatario</th>
+                                <th>Código</th>
+                                <th>Fecha</th>
+                                <th class="text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="messagesTableBody">
+                            <tr class="loading-row">
+                                <td colspan="5">
+                                    <div class="loading-state">
+                                        <div class="loader"></div>
+                                        <p>Cargando mensajes recibidos...</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Empty State for Messages -->
+                <div id="messagesEmptyState" class="empty-table hidden">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                    <h3>No se encontraron mensajes</h3>
+                    <p>Prueba con otros términos de búsqueda o filtros.</p>
                 </div>
             </section>
 

@@ -3,6 +3,7 @@
  */
 
 let currentSection = 'emails';
+let allMessages = []; // Almacenar mensajes para filtrado local
 
 document.addEventListener('DOMContentLoaded', () => {
   if (!Storage.getToken()) {
@@ -32,11 +33,57 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('modalClose').addEventListener('click', closeModal);
   document.getElementById('modalOverlay').addEventListener('click', closeModal);
 
+  // Configurar filtrado de mensajes
+  setupMessageFilters();
+
   loadSection('emails');
 
   // Configurar actualizaciones en tiempo real (SSE)
   setupRealTimeUpdates();
 });
+
+/**
+ * Configura los event listeners para el filtrado de mensajes
+ */
+function setupMessageFilters() {
+  const searchInput = document.getElementById('messageSearch');
+  const platformFilter = document.getElementById('platformFilter');
+  const clearBtn = document.getElementById('clearSearch');
+
+  if (!searchInput) return; // Puede que no estemos en la sección de mensajes
+
+  searchInput.addEventListener('input', filterMessages);
+  platformFilter.addEventListener('change', filterMessages);
+  clearBtn.addEventListener('click', () => {
+    searchInput.value = '';
+    platformFilter.value = 'all';
+    filterMessages();
+  });
+}
+
+/**
+ * Filtra y renderiza los mensajes basados en la búsqueda y el filtro de plataforma
+ */
+function filterMessages() {
+  const searchTerm = document.getElementById('messageSearch').value.toLowerCase();
+  const platformTerm = document.getElementById('platformFilter').value;
+
+  const filtered = allMessages.filter(platform => {
+    if (!platform.message) return false;
+
+    const matchesSearch =
+      platform.platform_name.toLowerCase().includes(searchTerm) ||
+      platform.email_address.toLowerCase().includes(searchTerm) ||
+      (platform.message.extracted_code && platform.message.extracted_code.toLowerCase().includes(searchTerm)) ||
+      (platform.message.recipient && platform.message.recipient.toLowerCase().includes(searchTerm));
+
+    const matchesPlatform = platformTerm === 'all' || platform.platform_name === platformTerm;
+
+    return matchesSearch && matchesPlatform;
+  });
+
+  renderMessagesTable(filtered);
+}
 
 /**
  * Configura la conexión de EventSource para actualizaciones en tiempo real
@@ -228,43 +275,164 @@ async function loadUsers() {
 }
 
 async function loadMessages() {
-  const container = document.getElementById('messagesContent');
-  container.innerHTML = '<div class="loading-state"><div class="loader"></div><p>Cargando mensajes...</p></div>';
+  const tbody = document.getElementById('messagesTableBody');
+  const emptyState = document.getElementById('messagesEmptyState');
+
+  if (!tbody) return;
+
+  tbody.innerHTML = '<tr class="loading-row"><td colspan="5" class="text-center"><div class="loader-small"></div><p>Cargando...</p></td></tr>';
+  emptyState.classList.add('hidden');
 
   try {
     const response = await API.get('/messages');
-    container.innerHTML = '<div class="platforms-grid" id="adminMessagesGrid"></div>';
-
-    const grid = document.getElementById('adminMessagesGrid');
-    const platforms = response.data;
+    allMessages = response.data;
 
     // Actualizar Netflix Live Highlight
-    renderNetflixLive(platforms);
+    renderNetflixLive(allMessages);
 
-    platforms.forEach(platform => {
-      if (platform.message) {
-        const card = document.createElement('div');
-        card.className = 'platform-card';
-        card.innerHTML = `
-          <div class="platform-header">
-            <img src="${platform.platform_logo}" alt="${platform.platform_name}" class="platform-logo" onerror="this.src='https://via.placeholder.com/60'">
-            <div class="platform-info">
-              <h3>${platform.platform_name}</h3>
-              <p class="platform-email">${platform.email_address}</p>
-            </div>
-          </div>
-          <div class="platform-body">
-            <p class="message-label">Código: ${platform.message.extracted_code || 'N/A'}</p>
-            <p style="color: var(--text-secondary); font-size: 0.9rem; margin: 0.5rem 0;">${Utils.formatDate(platform.message.received_at)}</p>
-            <button class="btn-secondary" onclick="deleteMessage(${platform.message.id})" style="width: 100%; margin-top: 1rem;">Eliminar Mensaje</button>
-          </div>
-        `;
-        grid.appendChild(card);
-      }
-    });
+    // Actualizar opciones del filtro de plataforma
+    updatePlatformFilterOptions(allMessages);
+
+    renderMessagesTable(allMessages);
+
   } catch (error) {
-    container.innerHTML = '<div class="empty-state"><p style="color: var(--error);">Error al cargar mensajes</p></div>';
+    console.error('Error al cargar mensajes:', error);
+    tbody.innerHTML = '<tr><td colspan="5" class="text-center" style="color: var(--error); padding: 2rem;">Error al cargar mensajes</td></tr>';
     hideNetflixLive();
+  }
+}
+
+/**
+ * Actualiza las opciones del select de plataformas
+ */
+function updatePlatformFilterOptions(platforms) {
+  const filter = document.getElementById('platformFilter');
+  if (!filter) return;
+
+  const currentVal = filter.value;
+  const uniquePlatforms = [...new Set(platforms.map(p => p.platform_name))].sort();
+
+  filter.innerHTML = '<option value="all">Todas las plataformas</option>';
+  uniquePlatforms.forEach(p => {
+    const option = document.createElement('option');
+    option.value = p;
+    option.textContent = p;
+    filter.appendChild(option);
+  });
+
+  filter.value = currentVal;
+}
+
+/**
+ * Renderiza la tabla de mensajes con los datos proporcionados
+ */
+function renderMessagesTable(platforms) {
+  const tbody = document.getElementById('messagesTableBody');
+  const emptyState = document.getElementById('messagesEmptyState');
+
+  tbody.innerHTML = '';
+
+  const messagesWithPlatform = platforms.filter(p => p.message);
+
+  if (messagesWithPlatform.length === 0) {
+    emptyState.classList.remove('hidden');
+    return;
+  }
+
+  emptyState.classList.add('hidden');
+
+  messagesWithPlatform.forEach(p => {
+    const msg = p.message;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>
+        <div class="platform-cell">
+          <img src="${p.platform_logo}" alt="${p.platform_name}" onerror="this.src='https://via.placeholder.com/32'">
+          <strong>${p.platform_name}</strong>
+        </div>
+      </td>
+      <td>
+        <div class="recipient-cell" title="${msg.recipient || p.email_address}">
+          ${msg.recipient || p.email_address}
+        </div>
+      </td>
+      <td>
+        <span class="code-badge">${msg.extracted_code || 'N/A'}</span>
+      </td>
+      <td>
+        <div class="date-cell">
+          ${Utils.formatDate(msg.received_at)}<br>
+          <small>${Utils.timeAgo(msg.received_at)}</small>
+        </div>
+      </td>
+      <td>
+        <div class="table-actions" style="justify-content: center;">
+          <button class="btn-icon btn-check" onclick="copyValue('${msg.extracted_code}')" title="Copiar código">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+          </button>
+          <button class="btn-icon btn-edit" onclick="viewMessageDetails(${msg.id})" title="Ver detalles">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+          </button>
+          <button class="btn-icon btn-delete" onclick="deleteMessage(${msg.id})" title="Eliminar">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+          </button>
+        </div>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+/**
+ * Copia un valor al portapapeles y muestra feedback
+ */
+async function copyValue(value) {
+  if (!value || value === 'N/A') return;
+  await Utils.copyToClipboard(value);
+  // Podríamos añadir un toast aquí si existiera
+}
+
+/**
+ * Muestra los detalles completos de un mensaje en el modal
+ */
+async function viewMessageDetails(id) {
+  try {
+    const response = await API.get(`/messages/${id}`);
+    const msg = response.data;
+
+    const modal = document.getElementById('formModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const form = document.getElementById('dynamicForm');
+
+    modalTitle.textContent = `Mensaje de ${msg.platform_name}`;
+    form.innerHTML = `
+      <div style="margin-bottom: 1.5rem;">
+        <p><strong>De:</strong> ${msg.sender}</p>
+        <p><strong>Para:</strong> ${msg.recipient || msg.email_address}</p>
+        <p><strong>Asunto:</strong> ${msg.subject}</p>
+        <p><strong>Fecha:</strong> ${Utils.formatDate(msg.received_at)}</p>
+      </div>
+      <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 8px; max-height: 400px; overflow-y: auto; color: #333; font-family: sans-serif;">
+        ${msg.content}
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn-secondary" onclick="closeModal()">Cerrar</button>
+        <button type="button" class="btn-primary" onclick="copyValue('${msg.extracted_code}')">Copiar Código (${msg.extracted_code})</button>
+      </div>
+    `;
+
+    modal.classList.remove('hidden');
+  } catch (error) {
+    alert('Error al cargar detalles del mensaje');
   }
 }
 
