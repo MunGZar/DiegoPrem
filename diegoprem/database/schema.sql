@@ -53,6 +53,7 @@ CREATE TABLE IF NOT EXISTS messages (
     email_id INT NOT NULL,
     subject VARCHAR(500) NULL,
     sender VARCHAR(255) NULL,
+    recipient VARCHAR(255) NULL,
     content TEXT NOT NULL,
     extracted_code VARCHAR(50) NULL,
     received_at TIMESTAMP NOT NULL,
