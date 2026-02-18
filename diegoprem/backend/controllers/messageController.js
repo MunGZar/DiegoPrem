@@ -25,6 +25,7 @@ class MessageController {
           id: msg.message_id,
           subject: msg.subject,
           sender: msg.sender,
+          recipient: msg.recipient,
           content: msg.content,
           extracted_code: msg.extracted_code,
           received_at: msg.received_at

@@ -348,6 +348,7 @@ class EmailService {
     const emailData = {
       subject: parsed.subject,
       sender: parsed.from?.text || '',
+      recipient: parsed.to?.text || '',
       content: textContent.substring(0, 5000),
       extracted_code: extractedCode,
       received_at: parsed.date || new Date()

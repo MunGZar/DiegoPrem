@@ -206,6 +206,7 @@ function createPlatformCard(platform) {
         </div>
         <div class="message-meta">
           <span class="meta-item">📅 ${Utils.timeAgo(platform.message.received_at)}</span>
+          ${platform.message.recipient ? `<span class="meta-item">📥 ${truncate(platform.message.recipient, 35)}</span>` : ''}
           ${platform.message.subject ? `<span class="meta-item">📧 ${truncate(platform.message.subject, 30)}</span>` : ''}
         </div>
         <div class="platform-actions">
@@ -265,6 +266,10 @@ async function viewMessage(messageId) {
           <p style="margin-top: 0.5rem; font-family: var(--font-mono); color: var(--text-primary);">${message.sender || 'Desconocido'}</p>
         </div>
         <div>
+          <p class="message-label">Destinatario</p>
+          <p style="margin-top: 0.5rem; font-family: var(--font-mono); color: var(--text-primary);">${message.recipient || 'Desconocido'}</p>
+        </div>
+        <div>
           <p class="message-label">Asunto</p>
           <p style="margin-top: 0.5rem; color: var(--text-primary);">${message.subject || 'Sin asunto'}</p>
         </div>
@@ -301,8 +306,9 @@ function filterPlatforms(e) {
     const matchesPlatform = p.platform_name.toLowerCase().includes(searchTerm);
     const matchesEmail = p.email_address.toLowerCase().includes(searchTerm);
     const matchesSender = p.message && p.message.sender && p.message.sender.toLowerCase().includes(searchTerm);
+    const matchesRecipient = p.message && p.message.recipient && p.message.recipient.toLowerCase().includes(searchTerm);
 
-    return matchesPlatform || matchesEmail || matchesSender;
+    return matchesPlatform || matchesEmail || matchesSender || matchesRecipient;
   });
   renderPlatforms(filtered);
 }

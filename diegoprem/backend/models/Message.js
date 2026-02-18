@@ -12,13 +12,13 @@ class Message {
    */
   static async createOrUpdate(messageData) {
     try {
-      const { email_id, subject, sender, content, extracted_code, received_at } = messageData;
+      const { email_id, subject, sender, recipient, content, extracted_code, received_at } = messageData;
 
       // Insertar nuevo mensaje (ya no eliminamos el anterior para mantener historial)
       const [result] = await pool.query(
-        `INSERT INTO messages (email_id, subject, sender, content, extracted_code, received_at) 
-         VALUES (?, ?, ?, ?, ?, ?)`,
-        [email_id, subject, sender, content, extracted_code, received_at]
+        `INSERT INTO messages (email_id, subject, sender, recipient, content, extracted_code, received_at) 
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [email_id, subject, sender, recipient || null, content, extracted_code, received_at]
       );
 
       // Limpieza: Mantener solo los últimos 100 mensajes en total para evitar saturación
@@ -79,6 +79,7 @@ class Message {
           m.id AS message_id,
           m.subject,
           m.sender,
+          m.recipient,
           m.content,
           m.extracted_code,
           m.received_at
