@@ -345,10 +345,24 @@ class EmailService {
       emailConfig.platform_name
     );
 
+    // Extraer destinatario de forma más robusta
+    let recipient = '';
+    if (parsed.to) {
+      if (typeof parsed.to === 'string') {
+        recipient = parsed.to;
+      } else if (parsed.to.text) {
+        recipient = parsed.to.text;
+      } else if (Array.isArray(parsed.to.value) && parsed.to.value.length > 0) {
+        recipient = parsed.to.value[0].address || parsed.to.value[0].name || '';
+      }
+    }
+
+    console.log(`📧 Extrayendo para: ${emailConfig.email_address} | Emisor: ${sender} | Destinatario: ${recipient}`);
+
     const emailData = {
       subject: parsed.subject,
-      sender: parsed.from?.text || '',
-      recipient: parsed.to?.text || '',
+      sender: parsed.from?.text || sender,
+      recipient: recipient,
       content: textContent.substring(0, 5000),
       extracted_code: extractedCode,
       received_at: parsed.date || new Date()
