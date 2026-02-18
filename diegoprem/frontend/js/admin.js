@@ -4,6 +4,7 @@
 
 let currentSection = 'emails';
 let allMessages = []; // Almacenar mensajes para filtrado local
+let allEmails = []; // Almacenar correos para filtrado local
 
 document.addEventListener('DOMContentLoaded', () => {
   if (!Storage.getToken()) {
@@ -36,11 +37,53 @@ document.addEventListener('DOMContentLoaded', () => {
   // Configurar filtrado de mensajes
   setupMessageFilters();
 
+  // Configurar filtrado de correos
+  setupEmailFilters();
+
   loadSection('emails');
 
   // Configurar actualizaciones en tiempo real (SSE)
   setupRealTimeUpdates();
 });
+
+/**
+ * Configura los event listeners para el filtrado de correos
+ */
+function setupEmailFilters() {
+  const searchInput = document.getElementById('emailSearch');
+  const platformFilter = document.getElementById('emailPlatformFilter');
+  const clearBtn = document.getElementById('clearEmailFilters');
+
+  if (!searchInput) return;
+
+  searchInput.addEventListener('input', filterEmails);
+  platformFilter.addEventListener('change', filterEmails);
+  clearBtn.addEventListener('click', () => {
+    searchInput.value = '';
+    platformFilter.value = 'all';
+    filterEmails();
+  });
+}
+
+/**
+ * Filtra y renderiza los correos basados en la búsqueda y el filtro de plataforma
+ */
+function filterEmails() {
+  const searchTerm = document.getElementById('emailSearch').value.toLowerCase();
+  const platformTerm = document.getElementById('emailPlatformFilter').value;
+
+  const filtered = allEmails.filter(email => {
+    const matchesSearch =
+      email.platform_name.toLowerCase().includes(searchTerm) ||
+      email.email_address.toLowerCase().includes(searchTerm);
+
+    const matchesPlatform = platformTerm === 'all' || email.platform_name === platformTerm;
+
+    return matchesSearch && matchesPlatform;
+  });
+
+  renderEmailsTable(filtered);
+}
 
 /**
  * Configura los event listeners para el filtrado de mensajes
@@ -194,50 +237,116 @@ async function loadSection(section) {
 }
 
 async function loadEmails() {
-  const tbody = document.querySelector('#emailsTable tbody');
-  tbody.innerHTML = '<tr class="loading-row"><td colspan="8" class="text-center"><div class="loader-small"></div><p>Cargando...</p></td></tr>';
+  const tbody = document.getElementById('emailsTableBody');
+  const emptyState = document.getElementById('emailsEmptyState');
+
+  if (!tbody) return;
+
+  tbody.innerHTML = '<tr class="loading-row"><td colspan="6" class="text-center"><div class="loader-small"></div><p>Cargando...</p></td></tr>';
+  emptyState.classList.add('hidden');
 
   try {
     const response = await API.get('/admin/emails');
-    tbody.innerHTML = '';
+    allEmails = response.data;
 
-    response.data.forEach(email => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${email.id}</td>
-        <td><strong>${email.platform_name}</strong></td>
-        <td style="font-family: var(--font-mono); font-size: 0.9rem;">${email.email_address}</td>
-        <td>${email.imap_host}</td>
-        <td>${email.imap_port}</td>
-        <td><span class="status-badge ${email.active ? 'status-active' : 'status-inactive'}">${email.active ? 'Activo' : 'Inactivo'}</span></td>
-        <td style="font-size: 0.85rem;">${Utils.timeAgo(email.last_checked)}</td>
-        <td>
-          <div class="table-actions">
-            <button class="btn-icon btn-check" onclick="checkEmail(${email.id})" title="Verificar ahora">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
-              </svg>
-            </button>
-            <button class="btn-icon btn-edit" onclick="editEmail(${email.id})" title="Editar">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-              </svg>
-            </button>
-            <button class="btn-icon btn-delete" onclick="deleteEmail(${email.id})" title="Eliminar">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="3 6 5 6 21 6"></polyline>
-                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-              </svg>
-            </button>
-          </div>
-        </td>
-      `;
-      tbody.appendChild(tr);
-    });
+    // Actualizar opciones del filtro de plataforma para correos
+    updateEmailPlatformFilterOptions(allEmails);
+
+    renderEmailsTable(allEmails);
   } catch (error) {
-    tbody.innerHTML = '<tr><td colspan="8" class="text-center" style="color: var(--error); padding: 2rem;">Error al cargar correos</td></tr>';
+    console.error('Error al cargar correos:', error);
+    tbody.innerHTML = '<tr><td colspan="6" class="text-center" style="color: var(--error); padding: 2rem;">Error al cargar correos</td></tr>';
   }
+}
+
+/**
+ * Actualiza las opciones del select de plataformas para correos
+ */
+function updateEmailPlatformFilterOptions(emails) {
+  const filter = document.getElementById('emailPlatformFilter');
+  if (!filter) return;
+
+  const currentVal = filter.value;
+  const uniquePlatforms = [...new Set(emails.map(e => e.platform_name))].sort();
+
+  filter.innerHTML = '<option value="all">Todas las plataformas</option>';
+  uniquePlatforms.forEach(p => {
+    const option = document.createElement('option');
+    option.value = p;
+    option.textContent = p;
+    filter.appendChild(option);
+  });
+
+  filter.value = currentVal;
+}
+
+/**
+ * Renderiza la tabla de correos con los datos proporcionados
+ */
+function renderEmailsTable(emails) {
+  const tbody = document.getElementById('emailsTableBody');
+  const emptyState = document.getElementById('emailsEmptyState');
+
+  if (!tbody) return;
+  tbody.innerHTML = '';
+
+  if (emails.length === 0) {
+    emptyState.classList.remove('hidden');
+    return;
+  }
+
+  emptyState.classList.add('hidden');
+
+  emails.forEach(email => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>
+        <div class="platform-cell">
+          <img src="${email.platform_logo}" alt="${email.platform_name}" onerror="this.src='https://via.placeholder.com/32'">
+          <strong>${email.platform_name}</strong>
+        </div>
+      </td>
+      <td style="font-family: var(--font-mono); font-size: 0.9rem;">${email.email_address}</td>
+      <td style="font-size: 0.85rem;">
+        <div style="opacity: 0.8;">Host: ${email.imap_host}</div>
+        <div style="opacity: 0.6;">Puerto: ${email.imap_port}</div>
+      </td>
+      <td>
+        <span class="status-badge ${email.active ? 'status-active' : 'status-inactive'}">
+          ${email.active ? 'Activo' : 'Inactivo'}
+        </span>
+      </td>
+      <td style="font-size: 0.85rem;">
+        <div class="date-cell">
+          ${email.last_checked ? Utils.formatDate(email.last_checked) : 'Nunca'}
+          <br>
+          <small>${email.last_checked ? Utils.timeAgo(email.last_checked) : '-'}</small>
+        </div>
+      </td>
+      <td>
+        <div class="table-actions" style="justify-content: center;">
+          <button class="btn-icon btn-check" onclick="checkEmail(${email.id})" title="Verificar ahora">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+            </svg>
+          </button>
+          <button class="btn-icon btn-edit" onclick="editEmail(${email.id})" title="Editar">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            </svg>
+          </button>
+          <button class="btn-icon btn-delete" onclick="deleteEmail(${email.id})" title="Eliminar">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+          </button>
+        </div>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
 }
 
 async function loadUsers() {
@@ -556,8 +665,82 @@ async function deleteMessage(id) {
   }
 }
 
-function editEmail(id) {
-  alert('Función de edición en desarrollo');
+async function editEmail(id) {
+  const email = allEmails.find(e => e.id === id);
+  if (!email) {
+    alert('No se encontró la información del correo');
+    return;
+  }
+
+  const modal = document.getElementById('formModal');
+  const modalTitle = document.getElementById('modalTitle');
+  const form = document.getElementById('dynamicForm');
+
+  modalTitle.textContent = 'Editar Correo Electrónico';
+  form.innerHTML = `
+    <div class="form-grid">
+      <div class="form-field">
+        <label>Correo Electrónico*</label>
+        <input type="email" name="email_address" value="${email.email_address}" required>
+      </div>
+      <div class="form-field">
+        <label>Contraseña IMAP (Dejar en blanco para no cambiar)</label>
+        <input type="password" name="imap_password" placeholder="********">
+      </div>
+      <div class="form-field">
+        <label>Host IMAP*</label>
+        <input type="text" name="imap_host" value="${email.imap_host}" required>
+      </div>
+      <div class="form-field">
+        <label>Puerto IMAP*</label>
+        <input type="number" name="imap_port" value="${email.imap_port}" required>
+      </div>
+      <div class="form-field">
+        <label>Plataforma*</label>
+        <input type="text" name="platform_name" value="${email.platform_name}" required>
+      </div>
+      <div class="form-field">
+        <label>URL del Logo</label>
+        <input type="url" name="platform_logo" value="${email.platform_logo || ''}" placeholder="https://...">
+      </div>
+      <div class="form-field">
+        <label>Estado</label>
+        <select name="active">
+          <option value="true" ${email.active ? 'selected' : ''}>Activo</option>
+          <option value="false" ${!email.active ? 'selected' : ''}>Inactivo</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button type="button" class="btn-secondary" onclick="closeModal()">Cancelar</button>
+      <button type="submit" class="btn-primary">Guardar Cambios</button>
+    </div>
+  `;
+
+  form.onsubmit = async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const data = Object.fromEntries(formData);
+
+    // Si la contraseña está vacía, la eliminamos para no sobreescribirla
+    if (!data.imap_password) {
+      delete data.imap_password;
+    }
+
+    // Convertir active de string a boolean
+    data.active = data.active === 'true';
+
+    try {
+      await API.put(`/admin/emails/${id}`, data);
+      closeModal();
+      loadEmails();
+      Utils.showNotification('Correo actualizado correctamente', 'success');
+    } catch (error) {
+      alert('Error al actualizar: ' + error.message);
+    }
+  };
+
+  modal.classList.remove('hidden');
 }
 
 function editUser(id) {

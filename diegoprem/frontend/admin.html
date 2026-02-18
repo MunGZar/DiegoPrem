@@ -158,23 +158,47 @@
 
             <!-- Emails Management Section -->
             <section id="emailsSection" class="content-section active">
+                <!-- Filters Bar for Emails -->
+                <div class="filters-bar">
+                    <div class="search-wrapper">
+                        <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <path d="m21 21-4.35-4.35"></path>
+                        </svg>
+                        <input type="text" id="emailSearch" placeholder="Buscar por plataforma o correo..."
+                            aria-label="Buscar correos">
+                    </div>
+
+                    <div class="filter-group">
+                        <select id="emailPlatformFilter" class="filter-select">
+                            <option value="all">Todas las plataformas</option>
+                            <!-- Opciones cargadas dinámicamente -->
+                        </select>
+                    </div>
+
+                    <div class="bulk-actions">
+                        <button class="btn-secondary btn-sm" id="clearEmailFilters">
+                            Limpiar Filtros
+                        </button>
+                    </div>
+                </div>
+
                 <div class="table-container">
                     <table class="data-table" id="emailsTable">
                         <thead>
                             <tr>
-                                <th>ID</th>
                                 <th>Plataforma</th>
                                 <th>Correo Electrónico</th>
-                                <th>Host IMAP</th>
-                                <th>Puerto</th>
+                                <th>Configuración IMAP</th>
                                 <th>Estado</th>
-                                <th>Última Verificación</th>
-                                <th>Acciones</th>
+                                <th>Última Verif.</th>
+                                <th class="text-center">Acciones</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody id="emailsTableBody">
                             <tr class="loading-row">
-                                <td colspan="8">
+                                <td colspan="6">
                                     <div class="loading-state">
                                         <div class="loader"></div>
                                         <p>Cargando correos electrónicos...</p>
@@ -183,6 +207,17 @@
                             </tr>
                         </tbody>
                     </table>
+                </div>
+
+                <!-- Empty State for Emails -->
+                <div id="emailsEmptyState" class="empty-table hidden">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                        <polyline points="22,6 12,13 2,6"></polyline>
+                    </svg>
+                    <h3>No se encontraron correos</h3>
+                    <p>Prueba con otros términos de búsqueda o filtros.</p>
                 </div>
             </section>
 
