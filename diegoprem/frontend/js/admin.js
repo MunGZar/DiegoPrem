@@ -158,58 +158,8 @@ function setupRealTimeUpdates() {
   }
 }
 
-/**
- * Renderiza el destacado especial de Netflix en el panel de admin
- */
-function renderNetflixLive(platforms) {
-  const netflix = platforms.find(p =>
-    p.platform_name.toLowerCase().includes('netflix') &&
-    p.message &&
-    p.message.extracted_code
-  );
 
-  const card = document.getElementById('liveNetflixCard');
-  if (!netflix || !card) {
-    hideNetflixLive();
-    return;
-  }
 
-  // Actualizar código y email
-  document.getElementById('liveNetflixCode').textContent = netflix.message.extracted_code;
-  document.getElementById('liveNetflixEmail').textContent = netflix.email_address;
-  document.getElementById('liveNetflixName').textContent = netflix.platform_name;
-
-  const logoImg = document.getElementById('liveNetflixLogo');
-  if (logoImg) {
-    logoImg.src = netflix.platform_logo || 'https://upload.wikimedia.org/wikipedia/commons/0/08/Netflix_2015_logo.svg';
-    logoImg.alt = netflix.platform_name;
-  }
-
-  // Configurar botones
-  const copyCodeBtn = document.getElementById('copyNetflixCode');
-  const copyEmailBtn = document.getElementById('copyNetflixEmail');
-
-  copyCodeBtn.onclick = async () => {
-    await Utils.copyToClipboard(netflix.message.extracted_code);
-    const original = copyCodeBtn.textContent;
-    copyCodeBtn.textContent = '¡Copiado!';
-    setTimeout(() => copyCodeBtn.textContent = original, 2000);
-  };
-
-  copyEmailBtn.onclick = async () => {
-    await Utils.copyToClipboard(netflix.email_address);
-    const original = copyEmailBtn.textContent;
-    copyEmailBtn.textContent = '¡Copiado!';
-    setTimeout(() => copyEmailBtn.textContent = original, 2000);
-  };
-
-  card.classList.remove('hidden');
-}
-
-function hideNetflixLive() {
-  const card = document.getElementById('liveNetflixCard');
-  if (card) card.classList.add('hidden');
-}
 
 function switchSection(section) {
   currentSection = section;
@@ -403,8 +353,6 @@ async function loadMessages() {
     const response = await API.get('/messages');
     allMessages = response.data;
 
-    // Actualizar Netflix Live Highlight
-    renderNetflixLive(allMessages);
 
     // Actualizar opciones del filtro de plataforma
     updatePlatformFilterOptions(allMessages);
@@ -414,7 +362,6 @@ async function loadMessages() {
   } catch (error) {
     console.error('Error al cargar mensajes:', error);
     tbody.innerHTML = '<tr><td colspan="5" class="text-center" style="color: var(--error); padding: 2rem;">Error al cargar mensajes</td></tr>';
-    hideNetflixLive();
   }
 }
 
