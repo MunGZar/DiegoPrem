@@ -26,6 +26,18 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Cargar datos iniciales
   await loadMessages();
 
+  // Mostrar opción de admin si corresponde
+  if (user.role === 'admin') {
+    const adminLink = document.getElementById('adminLink');
+    if (adminLink) {
+      adminLink.classList.remove('hidden');
+      adminLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        window.location.href = 'admin.html';
+      });
+    }
+  }
+
   // Configurar actualizaciones en tiempo real (SSE)
   setupRealTimeUpdates();
 
@@ -93,8 +105,11 @@ async function loadMessages() {
 
     if (!allPlatforms || allPlatforms.length === 0) {
       emptyState?.classList.remove('hidden');
+      document.getElementById('moduleSections')?.classList.add('hidden');
       hideNetflixLive();
     } else {
+      emptyState?.classList.add('hidden');
+      document.getElementById('moduleSections')?.classList.remove('hidden');
       renderNetflixLive(allPlatforms);
       renderPlatforms(allPlatforms);
       loadStats();
@@ -108,13 +123,57 @@ async function loadMessages() {
 }
 
 function renderPlatforms(platforms) {
-  const grid = document.getElementById('platformsGrid');
-  grid.innerHTML = '';
+  const accessGrid = document.getElementById('accessGrid');
+  const securityGrid = document.getElementById('securityGrid');
+  const accessModule = document.getElementById('accessModule');
+  const securityModule = document.getElementById('securityModule');
+
+  if (accessGrid) accessGrid.innerHTML = '';
+  if (securityGrid) securityGrid.innerHTML = '';
+
+  // Keywords to categorize as "Seguridad" (Password Reset)
+  const securityKeywords = ['restablecer', 'password', 'contraseña', 'seguridad', 'reset'];
+
+  let hasAccess = false;
+  let hasSecurity = false;
 
   platforms.forEach(platform => {
     const card = createPlatformCard(platform);
-    grid.appendChild(card);
+
+    // Determine category based on message subject or platform name if message is null
+    const subject = (platform.message?.subject || '').toLowerCase();
+    const isSecurity = securityKeywords.some(keyword => subject.includes(keyword));
+
+    if (isSecurity) {
+      if (securityGrid) {
+        securityGrid.appendChild(card);
+        hasSecurity = true;
+      }
+    } else {
+      if (accessGrid) {
+        accessGrid.appendChild(card);
+        hasAccess = true;
+      }
+    }
   });
+
+  // Hide/Show sections based on content
+  if (accessModule) {
+    hasAccess ? accessModule.classList.remove('hidden') : accessModule.classList.add('hidden');
+  }
+  if (securityModule) {
+    hasSecurity ? securityModule.classList.remove('hidden') : securityModule.classList.add('hidden');
+  }
+
+  // Show empty state if both are empty
+  const emptyState = document.getElementById('emptyState');
+  if (!hasAccess && !hasSecurity) {
+    emptyState?.classList.remove('hidden');
+    document.getElementById('moduleSections')?.classList.add('hidden');
+  } else {
+    emptyState?.classList.add('hidden');
+    document.getElementById('moduleSections')?.classList.remove('hidden');
+  }
 }
 
 function createPlatformCard(platform) {
@@ -238,10 +297,13 @@ function closeModal() {
 
 function filterPlatforms(e) {
   const searchTerm = e.target.value.toLowerCase();
-  const filtered = allPlatforms.filter(p =>
-    p.platform_name.toLowerCase().includes(searchTerm) ||
-    p.email_address.toLowerCase().includes(searchTerm)
-  );
+  const filtered = allPlatforms.filter(p => {
+    const matchesPlatform = p.platform_name.toLowerCase().includes(searchTerm);
+    const matchesEmail = p.email_address.toLowerCase().includes(searchTerm);
+    const matchesSender = p.message && p.message.sender && p.message.sender.toLowerCase().includes(searchTerm);
+
+    return matchesPlatform || matchesEmail || matchesSender;
+  });
   renderPlatforms(filtered);
 }
 
