@@ -14,6 +14,17 @@ class Message {
     try {
       const { email_id, subject, sender, recipient, content, extracted_code, received_at } = messageData;
 
+      // Verificar si ya existe este mensaje exacto para evitar duplicados
+      const [existing] = await pool.query(
+        `SELECT id FROM messages 
+         WHERE email_id = ? AND subject = ? AND sender = ? AND received_at = ?`,
+        [email_id, subject, sender, received_at]
+      );
+
+      if (existing.length > 0) {
+        return { id: existing[0].id, ...messageData, isDuplicate: true };
+      }
+
       // Insertar nuevo mensaje (ya no eliminamos el anterior para mantener historial)
       const [result] = await pool.query(
         `INSERT INTO messages (email_id, subject, sender, recipient, content, extracted_code, received_at) 

@@ -301,15 +301,27 @@ function closeModal() {
 }
 
 function filterPlatforms(e) {
-  const searchTerm = e.target.value.toLowerCase();
-  const filtered = allPlatforms.filter(p => {
-    const matchesPlatform = p.platform_name.toLowerCase().includes(searchTerm);
-    const matchesEmail = p.email_address.toLowerCase().includes(searchTerm);
-    const matchesSender = p.message && p.message.sender && p.message.sender.toLowerCase().includes(searchTerm);
-    const matchesRecipient = p.message && p.message.recipient && p.message.recipient.toLowerCase().includes(searchTerm);
+  const searchTerm = e.target.value.toLowerCase().trim();
 
-    return matchesPlatform || matchesEmail || matchesSender || matchesRecipient;
+  if (!searchTerm) {
+    renderPlatforms(allPlatforms);
+    return;
+  }
+
+  const filtered = allPlatforms.filter(p => {
+    const platName = (p.platform_name || '').toLowerCase();
+    const platEmail = (p.email_address || '').toLowerCase();
+    const msgSender = (p.message?.sender || '').toLowerCase();
+    const msgRecipient = (p.message?.recipient || '').toLowerCase();
+    const msgSubject = (p.message?.subject || '').toLowerCase();
+
+    return platName.includes(searchTerm) ||
+      platEmail.includes(searchTerm) ||
+      msgSender.includes(searchTerm) ||
+      msgRecipient.includes(searchTerm) ||
+      msgSubject.includes(searchTerm);
   });
+
   renderPlatforms(filtered);
 }
 
