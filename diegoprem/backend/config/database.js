@@ -27,11 +27,11 @@ const promisePool = pool.promise();
 const testConnection = async () => {
   try {
     const connection = await promisePool.getConnection();
-    console.log('✅ Conexión exitosa a MySQL');
+    console.log(' Conexión exitosa a MySQL');
     connection.release();
     return true;
   } catch (error) {
-    console.error('❌ Error al conectar a MySQL:', error.message);
+    console.error('Error al conectar a MySQL:', error.message);
     return false;
   }
 };

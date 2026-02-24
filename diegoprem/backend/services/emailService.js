@@ -2,7 +2,6 @@
  * DiegoPrem - Servicio de Correo IMAP
  * Lee correos electrónicos y extrae códigos de verificación
  * 
- * CORRECCIÓN: Ahora filtra correctamente palabras como "para" que no son códigos
  */
 
 const Imap = require('imap');
@@ -36,12 +35,12 @@ class EmailService {
           /(?:c[oó]digo|code|verification\s*code)[:\s]*([0-9][\s\xa0]*[0-9][\s\xa0]*[0-9][\s\xa0]*[0-9](?:[\s\xa0]*[0-9])*)/i,
           // Patrón 2: Números con espacios/tabs entre ellos (4-8 dígitos)
           /(?:^|[^a-záéíóúñ])([0-9][\s\xa0\t]+[0-9][\s\xa0\t]+[0-9][\s\xa0\t]+[0-9](?:[\s\xa0\t]+[0-9])*)(?:[^0-9]|$)/i,
-          // Patrón 3: Bloque de 4-8 dígitos continuos (último recurso)
+       
           /\b(\d{4,8})\b/i
         ],
-        // Solo aceptar códigos numéricos puros
+        // para solo codigos numericos
         numericOnly: true,
-        // Longitud esperada del código
+        // longitud de los codigos
         codeLength: [4, 6, 8]
       },
       disney: {
@@ -130,7 +129,7 @@ class EmailService {
 
     // Verificar longitud mínima
     if (trimmedCode.length < 4) {
-      console.log(`ℹ️ Código muy corto: ${code}`);
+      console.log(`ℹCódigo muy corto: ${code}`);
       return false;
     }
 
@@ -138,14 +137,14 @@ class EmailService {
     if (config && config.numericOnly) {
       const cleanNumeric = trimmedCode.replace(/[\s\xa0\t]/g, '');
       if (!/^\d+$/.test(cleanNumeric)) {
-        console.log(`ℹ️ Rechazando código no numérico para plataforma que requiere solo números: ${code}`);
+        console.log(`Rechazando código no numérico para plataforma que requiere solo números: ${code}`);
         return false;
       }
 
       // Verificar longitud esperada si está configurada
       if (config.codeLength && config.codeLength.length > 0) {
         if (!config.codeLength.includes(cleanNumeric.length)) {
-          console.log(`ℹ️ Longitud incorrecta (${cleanNumeric.length}). Esperada: ${config.codeLength.join(' o ')}`);
+          console.log(`ℹLongitud incorrecta (${cleanNumeric.length}). Esperada: ${config.codeLength.join(' o ')}`);
           return false;
         }
       }
@@ -153,32 +152,32 @@ class EmailService {
 
     // Evitar años comunes
     if (/^20[0-9]{2}$/.test(trimmedCode)) {
-      console.log(`ℹ️ Rechazando año: ${code}`);
+      console.log(`ℹRechazando año: ${code}`);
       return false;
     }
 
     // Evitar números genéricos comunes
     const commonNumbers = ['1000', '2000', '3000', '4000', '5000', '1234', '4321', '0000'];
     if (commonNumbers.includes(trimmedCode)) {
-      console.log(`ℹ️ Rechazando número común: ${code}`);
+      console.log(`ℹRechazando número común: ${code}`);
       return false;
     }
 
     // Evitar palabras de la lista negra
     if (this.BLACKLIST_WORDS.includes(lowerCode)) {
-      console.log(`ℹ️ Rechazando palabra en lista negra: ${code}`);
+      console.log(`ℹRechazando palabra en lista negra: ${code}`);
       return false;
     }
 
     // Evitar palabras puramente alfabéticas
     if (/^[a-záéíóúñ]+$/i.test(trimmedCode)) {
-      console.log(`ℹ️ Rechazando palabra alfabética: ${code}`);
+      console.log(`ℹ Rechazando palabra alfabética: ${code}`);
       return false;
     }
 
     // Códigos válidos deben tener al menos un número
     if (!/[0-9]/.test(trimmedCode)) {
-      console.log(`ℹ️ Rechazando código sin números: ${code}`);
+      console.log(`ℹRechazando código sin números: ${code}`);
       return false;
     }
 
@@ -195,7 +194,7 @@ class EmailService {
   static extractPlatformCode(text, config, platform) {
     if (!config || !config.patterns) return null;
 
-    console.log(`🔍 Buscando código con patrones específicos de ${platform}...`);
+    console.log(`Buscando código con patrones específicos de ${platform}...`);
 
     for (let i = 0; i < config.patterns.length; i++) {
       const pattern = config.patterns[i];
@@ -209,7 +208,7 @@ class EmailService {
           console.log(`   Patrón ${i + 1} encontró: "${match[1]}" → limpio: "${code}"`);
 
           if (this.isValidCode(code, config)) {
-            console.log(`✨ Código específico de ${platform} encontrado: ${code}`);
+            console.log(` Código específico de ${platform} encontrado: ${code}`);
             return code;
           }
         }
@@ -226,7 +225,7 @@ class EmailService {
    * @returns {string|null} Código extraído o null
    */
   static extractGenericCode(text, config = null) {
-    console.log(`🔍 Intentando patrones genéricos...`);
+    console.log(`Intentando patrones genéricos...`);
 
     for (const pattern of this.GENERIC_PATTERNS) {
       const match = text.match(pattern.regex);
@@ -260,13 +259,13 @@ class EmailService {
     const fullText = `${subject} ${text}`;
 
     console.log(`\n${'='.repeat(60)}`);
-    console.log(`🔍 Extrayendo código para: ${platform || 'Genérica'}`);
+    console.log(` Extrayendo código para: ${platform || 'Genérica'}`);
     console.log(`${'='.repeat(60)}`);
 
     // Verificar palabras clave permitidas si la plataforma las tiene
     if (config && config.allowedKeywords) {
       if (!this.hasAllowedKeywords(fullText, config.allowedKeywords)) {
-        console.log(`❌ Omitiendo: No contiene palabras clave permitidas.`);
+        console.log(`Omitiendo: No contiene palabras clave permitidas.`);
         console.log(`${'='.repeat(60)}\n`);
         return null;
       }
@@ -283,7 +282,7 @@ class EmailService {
         return platformCode;
       }
 
-      console.log(`ℹ️ No se encontró con patrones específicos, probando genéricos...`);
+      console.log(`ℹNo se encontró con patrones específicos, probando genéricos...`);
     }
 
     // 2. Intentar con patrones genéricos (solo si no es una plataforma con numericOnly)
@@ -293,7 +292,7 @@ class EmailService {
       return genericCode;
     }
 
-    console.log(`❌ No se encontró código válido`);
+    console.log(` No se encontró código válido`);
     console.log(`${'='.repeat(60)}\n`);
     return null;
   }
@@ -334,7 +333,7 @@ class EmailService {
 
     // Validar remitente
     if (platformKey && !this.isValidSender(sender, platformKey, config)) {
-      console.log(`ℹ️ Omitiendo correo de: ${sender} (no coincide con plataforma: ${platformKey})`);
+      console.log(`ℹOmitiendo correo de: ${sender} (no coincide con plataforma: ${platformKey})`);
       return null;
     }
 
@@ -345,24 +344,9 @@ class EmailService {
       emailConfig.platform_name
     );
 
-    // Extraer destinatario de forma más robusta
-    let recipient = '';
-    if (parsed.to) {
-      if (typeof parsed.to === 'string') {
-        recipient = parsed.to;
-      } else if (parsed.to.text) {
-        recipient = parsed.to.text;
-      } else if (Array.isArray(parsed.to.value) && parsed.to.value.length > 0) {
-        recipient = parsed.to.value[0].address || parsed.to.value[0].name || '';
-      }
-    }
-
-    console.log(`📧 Extrayendo para: ${emailConfig.email_address} | Emisor: ${sender} | Destinatario: ${recipient}`);
-
     const emailData = {
       subject: parsed.subject,
-      sender: parsed.from?.text || sender,
-      recipient: recipient,
+      sender: parsed.from?.text || '',
       content: textContent.substring(0, 5000),
       extracted_code: extractedCode,
       received_at: parsed.date || new Date()
@@ -508,7 +492,7 @@ class EmailService {
 
       for (const emailConfig of emails) {
         try {
-          console.log(`📧 Verificando correo: ${emailConfig.email_address}`);
+          console.log(`Verificando correo: ${emailConfig.email_address}`);
 
           const latestEmail = await this.fetchLatestEmail(emailConfig);
 
@@ -528,7 +512,7 @@ class EmailService {
             });
 
             const codeStatus = latestEmail.extracted_code || 'N/A';
-            console.log(`✅ Código encontrado para ${emailConfig.platform_name}: ${codeStatus}`);
+            console.log(`Código encontrado para ${emailConfig.platform_name}: ${codeStatus}`);
           } else {
             results.push({
               email: emailConfig.email_address,
@@ -544,7 +528,7 @@ class EmailService {
           await Email.updateLastChecked(emailConfig.id);
 
         } catch (error) {
-          console.error(`❌ Error verificando ${emailConfig.email_address}:`, error.message);
+          console.error(`Error verificando ${emailConfig.email_address}:`, error.message);
           results.push({
             email: emailConfig.email_address,
             platform: emailConfig.platform_name,
@@ -557,7 +541,7 @@ class EmailService {
 
       return results;
     } catch (error) {
-      console.error('❌ Error en checkAllEmails:', error);
+      console.error('Error en checkAllEmails:', error);
       throw new Error(`Error verificando correos: ${error.message}`);
     }
   }
@@ -575,7 +559,7 @@ class EmailService {
         throw new Error(`Correo con ID ${emailId} no encontrado`);
       }
 
-      console.log(`📧 Verificando correo: ${emailConfig.email_address}`);
+      console.log(`Verificando correo: ${emailConfig.email_address}`);
 
       const latestEmail = await this.fetchLatestEmail(emailConfig);
 
@@ -610,7 +594,7 @@ class EmailService {
       };
 
     } catch (error) {
-      console.error(`❌ Error verificando correo ${emailId}:`, error.message);
+      console.error(`Error verificando correo ${emailId}:`, error.message);
       throw new Error(`Error verificando correo: ${error.message}`);
     }
   }

@@ -44,10 +44,10 @@ npm start
 
 # 3. Servir frontend (en otra terminal)
 cd ../frontend
-python3 -m http.server 8080
+python -m http.server 8080
 
 # 4. Abrir navegador
-# http://localhost:8080/login.html
+# http://localhost:8081/login.html
 ```
 
 **Credenciales por defecto:**
