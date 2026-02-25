@@ -75,14 +75,21 @@ function setupRealTimeUpdates() {
     };
 
     eventSource.onerror = (error) => {
-      if (eventSource.readyState === EventSource.CLOSED) {
-        console.error('❌ Conexión SSE cerrada. Intentando reconectar...');
-      } else if (eventSource.readyState === EventSource.CONNECTING) {
-        console.warn('⚠️ Conexión SSE perdida, reintentando automáticamente...');
-      }
+      console.error('SSE Error:', error);
+      eventSource.close();
+
+      // Intentar reconectar después de 3 segundos
+      setTimeout(() => {
+        console.log('🔄 Intentando reconectar SSE...');
+        setupRealTimeUpdates();
+      }, 3000);
     };
   } catch (error) {
     console.error('No se pudo establecer conexión SSE:', error);
+    // Intentar de nuevo si falló completamente
+    setTimeout(() => {
+      setupRealTimeUpdates();
+    }, 5000);
   }
 }
 
