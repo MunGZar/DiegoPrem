@@ -35,7 +35,7 @@ class EmailService {
           /(?:c[oó]digo|code|verification\s*code)[:\s]*([0-9][\s\xa0]*[0-9][\s\xa0]*[0-9][\s\xa0]*[0-9](?:[\s\xa0]*[0-9])*)/i,
           // Patrón 2: Números con espacios/tabs entre ellos (4-8 dígitos)
           /(?:^|[^a-záéíóúñ])([0-9][\s\xa0\t]+[0-9][\s\xa0\t]+[0-9][\s\xa0\t]+[0-9](?:[\s\xa0\t]+[0-9])*)(?:[^0-9]|$)/i,
-       
+
           /\b(\d{4,8})\b/i
         ],
         // para solo codigos numericos
@@ -347,6 +347,7 @@ class EmailService {
     const emailData = {
       subject: parsed.subject,
       sender: parsed.from?.text || '',
+      recipient: parsed.to?.text || '',
       content: textContent.substring(0, 5000),
       extracted_code: extractedCode,
       received_at: parsed.date || new Date()
