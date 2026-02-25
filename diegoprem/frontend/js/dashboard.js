@@ -408,8 +408,22 @@ function renderNetflixLive(platforms) {
   // Actualizar email
   const emailElement = document.getElementById('liveNetflixEmail');
   if (emailElement) {
-    emailElement.textContent = netflix.message.recipient || netflix.email_address || netflix.message.subject;
+    emailElement.textContent = netflix.message.recipient || netflix.email_address;
+  }
 
+  // Actualizar asunto
+  const subjectElement = document.getElementById('liveNetflixSubject');
+  if (subjectElement) {
+    if (netflix.message.subject) {
+      subjectElement.textContent = truncate(netflix.message.subject, 60);
+      subjectElement.style.fontSize = '0.8rem';
+      subjectElement.style.color = 'var(--text-secondary)';
+      subjectElement.style.marginTop = '0.3rem';
+      subjectElement.style.opacity = '0.8';
+      subjectElement.style.textAlign = 'center';
+    } else {
+      subjectElement.textContent = '';
+    }
   }
 
   // Configurar botón copiar código
