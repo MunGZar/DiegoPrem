@@ -191,7 +191,7 @@ function createPlatformCard(platform) {
            onerror="this.src='https://via.placeholder.com/60'">
       <div class="platform-info">
         <h3>${platform.platform_name}</h3>
-        <p class="platform-email">${platform.email_address}</p>
+        <p class="platform-email">${(hasMessage && platform.message.recipient) ? platform.message.recipient : platform.email_address}</p>
       </div>
     </div>
     <div class="platform-body">
@@ -400,7 +400,7 @@ function renderNetflixLive(platforms) {
   // Actualizar email
   const emailElement = document.getElementById('liveNetflixEmail');
   if (emailElement) {
-    emailElement.textContent = netflix.email_address;
+    emailElement.textContent = netflix.message.recipient || netflix.email_address;
   }
 
   // Configurar botón copiar código
