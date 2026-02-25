@@ -156,6 +156,20 @@ class Message {
   }
 
   /**
+   * Eliminar múltiples mensajes
+   */
+  static async deleteMultiple(ids) {
+    try {
+      if (!Array.isArray(ids) || ids.length === 0) return true;
+      const placeholders = ids.map(() => '?').join(',');
+      await pool.query(`DELETE FROM messages WHERE id IN (${placeholders})`, ids);
+      return true;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
    * Eliminar todos los mensajes de un correo
    */
   static async deleteByEmailId(email_id) {

@@ -28,6 +28,7 @@ router.post('/emails/:id/check', AdminController.checkEmail);
 router.post('/emails/check-all', AdminController.checkAllEmails);
 
 // ==================== MENSAJES ====================
+router.post('/messages/bulk-delete', AdminController.deleteMultipleMessages);
 router.delete('/messages/:id', AdminController.deleteMessage);
 router.delete('/messages/email/:emailId', AdminController.deleteMessagesByEmail);
 

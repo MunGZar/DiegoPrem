@@ -324,6 +324,36 @@ class AdminController {
   }
 
   /**
+   * Eliminar múltiples mensajes
+   */
+  static async deleteMultipleMessages(req, res) {
+    try {
+      const { ids } = req.body;
+
+      if (!Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Se requiere un arreglo de IDs'
+        });
+      }
+
+      await Message.deleteMultiple(ids);
+
+      res.json({
+        success: true,
+        message: 'Mensajes eliminados exitosamente'
+      });
+
+    } catch (error) {
+      console.error('Error en deleteMultipleMessages:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error al eliminar mensajes'
+      });
+    }
+  }
+
+  /**
    * Eliminar todos los mensajes de un correo
    */
   static async deleteMessagesByEmail(req, res) {

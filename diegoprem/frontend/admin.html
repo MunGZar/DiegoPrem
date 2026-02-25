@@ -243,6 +243,10 @@
                         <button class="btn-secondary btn-sm" id="clearSearch">
                             Limpiar Filtros
                         </button>
+                        <button class="btn-danger btn-sm hidden" id="deleteSelectedMessagesBtn"
+                            style="margin-left: 0.5rem; background-color: var(--error); border-color: var(--error); color: white;">
+                            Eliminar Seleccionados (<span id="selectedMessagesCount">0</span>)
+                        </button>
                     </div>
                 </div>
 
@@ -251,6 +255,8 @@
                     <table class="data-table" id="messagesTable">
                         <thead>
                             <tr>
+                                <th style="width: 40px; text-align: center;"><input type="checkbox"
+                                        id="selectAllMessages"></th>
                                 <th>Plataforma</th>
                                 <th>Destinatario</th>
                                 <th>Código</th>
@@ -260,7 +266,7 @@
                         </thead>
                         <tbody id="messagesTableBody">
                             <tr class="loading-row">
-                                <td colspan="5">
+                                <td colspan="6">
                                     <div class="loading-state">
                                         <div class="loader"></div>
                                         <p>Cargando mensajes recibidos...</p>

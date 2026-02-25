@@ -5,6 +5,7 @@
 let currentSection = 'emails';
 let allMessages = []; // Almacenar mensajes para filtrado local
 let allEmails = []; // Almacenar correos para filtrado local
+let selectedMessages = []; // Almacenar IDs de mensajes seleccionados
 
 document.addEventListener('DOMContentLoaded', () => {
   if (!Storage.getToken()) {
@@ -33,6 +34,10 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('logoutBtn').addEventListener('click', logout);
   document.getElementById('modalClose').addEventListener('click', closeModal);
   document.getElementById('modalOverlay').addEventListener('click', closeModal);
+
+  // Bulk delete buttons
+  document.getElementById('selectAllMessages')?.addEventListener('change', handleSelectAllMessages);
+  document.getElementById('deleteSelectedMessagesBtn')?.addEventListener('click', deleteSelectedMessages);
 
   // Configurar filtrado de mensajes
   setupMessageFilters();
@@ -404,10 +409,16 @@ function renderMessagesTable(platforms) {
 
   emptyState.classList.add('hidden');
 
+  // Reset selected messages state if needed, or keep it depending on UX. Here we keep it but update UI.
+  updateSelectedMessagesUI();
+
   messagesWithPlatform.forEach(p => {
     const msg = p.message;
     const tr = document.createElement('tr');
     tr.innerHTML = `
+      <td style="text-align: center;">
+        <input type="checkbox" class="message-checkbox" value="${msg.id}" ${selectedMessages.includes(String(msg.id)) ? 'checked' : ''}>
+      </td>
       <td>
         <div class="platform-cell">
           <img src="${p.platform_logo}" alt="${p.platform_name}" onerror="this.src='https://via.placeholder.com/32'">
@@ -451,8 +462,85 @@ function renderMessagesTable(platforms) {
         </div>
       </td>
     `;
+
+    // Add checkbox listener
+    const checkbox = tr.querySelector('.message-checkbox');
+    if (checkbox) {
+      checkbox.addEventListener('change', (e) => handleSelectMessage(e, String(msg.id)));
+    }
+
     tbody.appendChild(tr);
   });
+}
+
+function handleSelectMessage(e, id) {
+  if (e.target.checked) {
+    if (!selectedMessages.includes(id)) selectedMessages.push(id);
+  } else {
+    selectedMessages = selectedMessages.filter(msgId => msgId !== id);
+  }
+  updateSelectedMessagesUI();
+}
+
+function handleSelectAllMessages(e) {
+  const isChecked = e.target.checked;
+  const visibleCheckboxes = document.querySelectorAll('.message-checkbox');
+
+  if (isChecked) {
+    visibleCheckboxes.forEach(cb => {
+      cb.checked = true;
+      if (!selectedMessages.includes(cb.value)) selectedMessages.push(cb.value);
+    });
+  } else {
+    visibleCheckboxes.forEach(cb => {
+      cb.checked = false;
+      selectedMessages = selectedMessages.filter(id => id !== cb.value);
+    });
+  }
+  updateSelectedMessagesUI();
+}
+
+function updateSelectedMessagesUI() {
+  const countSpan = document.getElementById('selectedMessagesCount');
+  const deleteBtn = document.getElementById('deleteSelectedMessagesBtn');
+  const selectAll = document.getElementById('selectAllMessages');
+
+  if (countSpan) countSpan.textContent = selectedMessages.length;
+
+  if (selectedMessages.length > 0) {
+    deleteBtn?.classList.remove('hidden');
+  } else {
+    deleteBtn?.classList.add('hidden');
+  }
+
+  // Update select all indeterminate or checked state if needed
+  if (selectAll) {
+    const visibleCheckboxes = document.querySelectorAll('.message-checkbox');
+    if (visibleCheckboxes.length > 0) {
+      const allChecked = Array.from(visibleCheckboxes).every(cb => cb.checked);
+      const someChecked = Array.from(visibleCheckboxes).some(cb => cb.checked);
+      selectAll.checked = allChecked;
+      selectAll.indeterminate = someChecked && !allChecked;
+    } else {
+      selectAll.checked = false;
+      selectAll.indeterminate = false;
+    }
+  }
+}
+
+async function deleteSelectedMessages() {
+  if (selectedMessages.length === 0) return;
+
+  if (!confirm(`¿Eliminar los ${selectedMessages.length} mensajes seleccionados?`)) return;
+
+  try {
+    const response = await API.post('/admin/messages/bulk-delete', { ids: selectedMessages });
+    selectedMessages = []; // Clean state
+    updateSelectedMessagesUI();
+    loadMessages(); // Reload table
+  } catch (error) {
+    alert('Error: ' + error.message);
+  }
 }
 
 /**
