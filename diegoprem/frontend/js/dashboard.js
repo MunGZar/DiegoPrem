@@ -401,7 +401,8 @@ function renderNetflixLive(platforms) {
   // Actualizar email
   const emailElement = document.getElementById('liveNetflixEmail');
   if (emailElement) {
-    emailElement.textContent = netflix.message.recipient || netflix.email_address;
+    emailElement.textContent = netflix.message.recipient || netflix.email_address || netflix.message.subject;
+
   }
 
   // Configurar botón copiar código
