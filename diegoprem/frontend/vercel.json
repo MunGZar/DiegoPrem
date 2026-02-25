@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://18.216.30.96.sslip.io/api/:path*"
+      "destination": "http://18.216.30.96/api/:path*"
     },
     {
       "source": "/",
