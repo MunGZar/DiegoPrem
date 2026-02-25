@@ -12,7 +12,7 @@
   --primary-green: #00ff88;
   --primary-green-dark: #00cc6e;
   --primary-green-light: #33ffaa;
-  
+
   /* Accent - Rojo/naranja degradado */
   --accent-red: #ff0055;
   --accent-orange: #ff6600;
@@ -45,7 +45,7 @@
   /* Gradient - Multicolor del logo */
   --gradient-brand: linear-gradient(135deg, #00ff88 0%, #ffaa00 50%, #ff0055 100%);
   --gradient-card: linear-gradient(135deg, rgba(0, 255, 136, 0.05) 0%, transparent 100%);
-  
+
   /* Shadows */
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.4);
   --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.5);
@@ -123,16 +123,16 @@ body {
 
 /* ================= UTILITIES ================= */
 
-.hidden { 
-  display: none !important; 
+.hidden {
+  display: none !important;
 }
 
-.text-center { 
-  text-align: center; 
+.text-center {
+  text-align: center;
 }
 
-.text-muted { 
-  color: var(--text-secondary); 
+.text-muted {
+  color: var(--text-secondary);
 }
 
 .gradient-text {
@@ -145,12 +145,21 @@ body {
 /* ================= LOADER ================= */
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
 }
 
 .loader,
@@ -289,6 +298,15 @@ select:focus {
   background: var(--bg-secondary);
 }
 
+input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  accent-color: var(--primary-green);
+}
+
 /* ================= CARDS ================= */
 
 .card {
@@ -360,8 +378,13 @@ select:focus {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 .modal-overlay {
@@ -385,13 +408,14 @@ select:focus {
 }
 
 @keyframes modalSlideUp {
-  from { 
-    opacity: 0; 
-    transform: translateY(40px) scale(0.95); 
+  from {
+    opacity: 0;
+    transform: translateY(40px) scale(0.95);
   }
-  to { 
-    opacity: 1; 
-    transform: translateY(0) scale(1); 
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
 
@@ -557,6 +581,7 @@ select:focus {
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -567,6 +592,7 @@ select:focus {
   0% {
     background-position: -1000px 0;
   }
+
   100% {
     background-position: 1000px 0;
   }
@@ -579,15 +605,15 @@ select:focus {
 /* ================= RESPONSIVE ================= */
 
 @media (max-width: 768px) {
-  html { 
-    font-size: 14px; 
+  html {
+    font-size: 14px;
   }
-  
+
   .modal-content {
     width: 95%;
     max-height: 90vh;
   }
-  
+
   .modal-header,
   .modal-body {
     padding: 1.25rem;
@@ -595,6 +621,7 @@ select:focus {
 }
 
 @media (max-width: 480px) {
+
   .btn-primary,
   .btn-secondary {
     padding: 0.75rem 1.25rem;
