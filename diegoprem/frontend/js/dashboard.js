@@ -192,6 +192,7 @@ function createPlatformCard(platform) {
       <div class="platform-info">
         <h3>${platform.platform_name}</h3>
         <p class="platform-email">${(hasMessage && platform.message.recipient) ? platform.message.recipient : platform.email_address}</p>
+        ${(hasMessage && platform.message.subject) ? `<p class="platform-subject" style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.2rem; opacity: 0.7;">${truncate(platform.message.subject, 40)}</p>` : ''}
       </div>
     </div>
     <div class="platform-body">
