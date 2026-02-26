@@ -174,6 +174,7 @@
     opacity: 0;
     transform: translateY(-10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -250,12 +251,10 @@
   left: -50%;
   width: 200%;
   height: 200%;
-  background: linear-gradient(
-    45deg,
-    transparent 30%,
-    rgba(0, 255, 136, 0.1) 50%,
-    transparent 70%
-  );
+  background: linear-gradient(45deg,
+      transparent 30%,
+      rgba(0, 255, 136, 0.1) 50%,
+      transparent 70%);
   animation: shimmerSlow 4s infinite;
   pointer-events: none;
 }
@@ -264,6 +263,7 @@
   0% {
     transform: translateX(-100%) translateY(-100%) rotate(45deg);
   }
+
   100% {
     transform: translateX(100%) translateY(100%) rotate(45deg);
   }
@@ -300,22 +300,25 @@
 }
 
 @keyframes logoFloat {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateY(0px);
   }
+
   50% {
     transform: translateY(-8px);
   }
 }
 
-.live-left > div h3 {
+.live-left>div h3 {
   font-size: 1.5rem;
   font-weight: 800;
   color: var(--text-primary);
   margin-bottom: 0.25rem;
 }
 
-.live-left > div p {
+.live-left>div p {
   font-size: 0.85rem;
   color: var(--text-secondary);
   text-transform: uppercase;
@@ -359,12 +362,10 @@
   left: -50%;
   width: 200%;
   height: 200%;
-  background: linear-gradient(
-    45deg,
-    transparent,
-    rgba(0, 255, 136, 0.15),
-    transparent
-  );
+  background: linear-gradient(45deg,
+      transparent,
+      rgba(0, 255, 136, 0.15),
+      transparent);
   animation: shimmer 3s infinite;
 }
 
@@ -751,12 +752,10 @@
   left: -50%;
   width: 200%;
   height: 200%;
-  background: linear-gradient(
-    45deg,
-    transparent,
-    rgba(0, 255, 136, 0.1),
-    transparent
-  );
+  background: linear-gradient(45deg,
+      transparent,
+      rgba(0, 255, 136, 0.1),
+      transparent);
   animation: shimmer 3s infinite;
 }
 
@@ -764,6 +763,7 @@
   0% {
     transform: translateX(-100%) translateY(-100%) rotate(45deg);
   }
+
   100% {
     transform: translateX(100%) translateY(100%) rotate(45deg);
   }
@@ -868,8 +868,15 @@
 }
 
 @keyframes pulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.05); }
+
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.05);
+  }
 }
 
 .btn-view {
@@ -984,11 +991,11 @@
   .platforms-grid {
     grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
   }
-  
+
   .live-highlight {
     flex-wrap: wrap;
   }
-  
+
   .live-center {
     order: 3;
     width: 100%;
@@ -1037,33 +1044,33 @@
   .search-bar {
     max-width: 100%;
   }
-  
+
   /* Live Netflix Highlight - Mobile */
   .live-highlight {
     flex-direction: column;
     padding: 1.75rem;
     gap: 1.5rem;
   }
-  
+
   .live-left {
     width: 100%;
     justify-content: center;
   }
-  
+
   .live-center {
     width: 100%;
     padding: 0;
   }
-  
+
   .live-code {
     font-size: 2rem;
     padding: 1rem 1.5rem;
   }
-  
+
   .live-right {
     width: 100%;
   }
-  
+
   .live-btn {
     width: 100%;
   }
@@ -1102,23 +1109,106 @@
   .btn-view {
     width: 100%;
   }
-  
+
   .live-code {
     font-size: 1.5rem;
     padding: 0.875rem 1rem;
     letter-spacing: 0.1em;
   }
-  
+
   .live-logo {
     width: 50px;
     height: 50px;
   }
-  
-  .live-left > div h3 {
+
+  .live-left>div h3 {
     font-size: 1.25rem;
   }
-  
-  .live-left > div p {
+
+  .live-left>div p {
     font-size: 0.75rem;
   }
+}
+
+/* ================================
+   PLATFORM GROUPS
+================================ */
+
+.platform-groups-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.platform-group-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  transition: all var(--transition-base);
+  box-shadow: var(--shadow-sm);
+}
+
+.platform-group-card:hover {
+  border-color: rgba(0, 255, 136, 0.3);
+}
+
+.platform-group-header {
+  padding: 1.5rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  background: linear-gradient(135deg, rgba(0, 255, 136, 0.03), transparent);
+  transition: all var(--transition-base);
+}
+
+.platform-group-header:hover {
+  background: var(--bg-hover);
+}
+
+.group-header-info {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.group-logo {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.4));
+}
+
+.platform-group-header h2 {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.group-header-toggle svg {
+  width: 24px;
+  height: 24px;
+  color: var(--text-secondary);
+  transition: transform 0.3s ease;
+}
+
+.platform-group-header.open .group-header-toggle svg {
+  transform: rotate(180deg);
+  color: var(--primary-green);
+}
+
+.platform-group-header.open {
+  border-bottom: 1px solid var(--border-color);
+  background: linear-gradient(135deg, rgba(0, 255, 136, 0.05), rgba(0, 255, 136, 0.02));
+}
+
+.platform-group-content {
+  padding: 2rem;
+  background: var(--bg-primary);
+}
+
+.platform-group-content.hidden {
+  display: none;
 }

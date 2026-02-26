@@ -130,57 +130,90 @@ async function loadMessages() {
 }
 
 function renderPlatforms(platforms) {
-  const accessGrid = document.getElementById('accessGrid');
-  const securityGrid = document.getElementById('securityGrid');
-  const accessModule = document.getElementById('accessModule');
-  const securityModule = document.getElementById('securityModule');
+  const moduleSections = document.getElementById('moduleSections');
+  if (moduleSections) moduleSections.innerHTML = '';
 
-  if (accessGrid) accessGrid.innerHTML = '';
-  if (securityGrid) securityGrid.innerHTML = '';
-
-  // Keywords to categorize as "Seguridad" (Password Reset)
-  const securityKeywords = ['restablecer', 'password', 'contraseña', 'seguridad', 'reset'];
-
-  let hasAccess = false;
-  let hasSecurity = false;
-
-  platforms.forEach(platform => {
-    const card = createPlatformCard(platform);
-
-    // Determine category based on message subject or platform name if message is null
-    const subject = (platform.message?.subject || '').toLowerCase();
-    const isSecurity = securityKeywords.some(keyword => subject.includes(keyword));
-
-    if (isSecurity) {
-      if (securityGrid) {
-        securityGrid.appendChild(card);
-        hasSecurity = true;
-      }
-    } else {
-      if (accessGrid) {
-        accessGrid.appendChild(card);
-        hasAccess = true;
-      }
-    }
-  });
-
-  // Hide/Show sections based on content
-  if (accessModule) {
-    hasAccess ? accessModule.classList.remove('hidden') : accessModule.classList.add('hidden');
-  }
-  if (securityModule) {
-    hasSecurity ? securityModule.classList.remove('hidden') : securityModule.classList.add('hidden');
-  }
-
-  // Show empty state if both are empty
   const emptyState = document.getElementById('emptyState');
-  if (!hasAccess && !hasSecurity) {
+
+  if (!platforms || platforms.length === 0) {
     emptyState?.classList.remove('hidden');
-    document.getElementById('moduleSections')?.classList.add('hidden');
+    moduleSections?.classList.add('hidden');
+    return;
+  }
+
+  // Agrupar plataformas dinámicamente
+  const groupedPlatforms = platforms.reduce((acc, platform) => {
+    const name = platform.platform_name || 'Otros';
+    if (!acc[name]) {
+      acc[name] = [];
+    }
+    acc[name].push(platform);
+    return acc;
+  }, {});
+
+  const platformNames = Object.keys(groupedPlatforms).sort();
+
+  if (platformNames.length === 0) {
+    emptyState?.classList.remove('hidden');
+    moduleSections?.classList.add('hidden');
+    return;
   } else {
     emptyState?.classList.add('hidden');
-    document.getElementById('moduleSections')?.classList.remove('hidden');
+    moduleSections?.classList.remove('hidden');
   }
+
+  platformNames.forEach(platformName => {
+    const items = groupedPlatforms[platformName];
+
+    const groupCard = document.createElement('div');
+    groupCard.className = 'platform-group-card';
+
+    const logo = items[0].platform_logo || 'https://via.placeholder.com/60';
+
+    // Header clickeable del grupo
+    const header = document.createElement('div');
+    header.className = 'platform-group-header';
+
+    // Por defecto Netflix abierto, los demás cerrados. (Opcional, según conveniencia)
+    // Aquí podemos dejarlos cerrados todos o manejar uno abierto por defecto.
+    const isNetflix = platformName.toLowerCase().includes('netflix');
+    if (isNetflix) header.classList.add('open');
+
+    header.innerHTML = `
+      <div class="group-header-info">
+        <img src="${logo}" alt="${platformName}" class="group-logo" onerror="this.src='https://via.placeholder.com/60'">
+        <h2>${platformName} <span style="font-size: 0.9rem; font-weight: 500; opacity: 0.7; margin-left: 0.5rem; color: var(--text-secondary);">(${items.length} ${items.length === 1 ? 'cuenta' : 'cuentas'})</span></h2>
+      </div>
+      <div class="group-header-toggle">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+      </div>
+    `;
+
+    const content = document.createElement('div');
+    content.className = 'platform-group-content';
+    if (!isNetflix) content.classList.add('hidden'); // Ocultar si no es Netflix inicialmente
+
+    const grid = document.createElement('div');
+    grid.className = 'platforms-grid';
+
+    items.forEach(platform => {
+      const card = createPlatformCard(platform);
+      grid.appendChild(card);
+    });
+
+    content.appendChild(grid);
+
+    header.addEventListener('click', () => {
+      content.classList.toggle('hidden');
+      header.classList.toggle('open');
+    });
+
+    groupCard.appendChild(header);
+    groupCard.appendChild(content);
+    if (moduleSections) moduleSections.appendChild(groupCard);
+  });
 }
 
 function createPlatformCard(platform) {
