@@ -176,10 +176,9 @@ function renderPlatforms(platforms) {
     const header = document.createElement('div');
     header.className = 'platform-group-header';
 
-    // Por defecto Netflix abierto, los demás cerrados. (Opcional, según conveniencia)
-    // Aquí podemos dejarlos cerrados todos o manejar uno abierto por defecto.
-    const isNetflix = platformName.toLowerCase().includes('netflix');
-    if (isNetflix) header.classList.add('open');
+    // Por defecto todos los mantendremos cerrados hasta que el usuario dé click.
+    // const isNetflix = platformName.toLowerCase().includes('netflix');
+    // if (isNetflix) header.classList.add('open');
 
     header.innerHTML = `
       <div class="group-header-info">
@@ -194,8 +193,7 @@ function renderPlatforms(platforms) {
     `;
 
     const content = document.createElement('div');
-    content.className = 'platform-group-content';
-    if (!isNetflix) content.classList.add('hidden'); // Ocultar si no es Netflix inicialmente
+    content.className = 'platform-group-content hidden'; // Todo oculto inicialmente
 
     const grid = document.createElement('div');
     grid.className = 'platforms-grid';
