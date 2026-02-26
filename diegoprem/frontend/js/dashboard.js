@@ -101,7 +101,9 @@ async function loadMessages() {
   // Mostrar estado de carga
   loadingState?.classList.remove('hidden');
   emptyState?.classList.add('hidden');
-  grid.innerHTML = '';
+  if (grid) grid.innerHTML = '';
+  const moduleSections = document.getElementById('moduleSections');
+  if (moduleSections) moduleSections.innerHTML = '';
 
   try {
     const response = await API.get('/messages');
