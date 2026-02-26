@@ -257,7 +257,7 @@ function renderEmailsTable(emails) {
     tr.innerHTML = `
       <td>
         <div class="platform-cell">
-          <img src="${email.platform_logo}" alt="${email.platform_name}" onerror="this.src='https://via.placeholder.com/32'">
+          <img src="${Utils.getPlatformLogo(email.platform_name, email.platform_logo)}" alt="${email.platform_name}" onerror="this.src='https://via.placeholder.com/32'">
           <strong>${email.platform_name}</strong>
         </div>
       </td>
@@ -421,7 +421,7 @@ function renderMessagesTable(platforms) {
       </td>
       <td>
         <div class="platform-cell">
-          <img src="${p.platform_logo}" alt="${p.platform_name}" onerror="this.src='https://via.placeholder.com/32'">
+          <img src="${Utils.getPlatformLogo(p.platform_name, p.platform_logo)}" alt="${p.platform_name}" onerror="this.src='https://via.placeholder.com/32'">
           <strong>${p.platform_name}</strong>
         </div>
       </td>

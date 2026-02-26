@@ -131,5 +131,13 @@ const Utils = {
 
   showNotification(message, type = 'info') {
     console.log(`[${type.toUpperCase()}] ${message}`);
+  },
+
+  getPlatformLogo(platformName, originalLogo) {
+    // Si el nombre de la plataforma incluye netflix, forzamos este logo
+    if (platformName && platformName.toLowerCase().includes('netflix')) {
+      return 'https://upload.wikimedia.org/wikipedia/commons/0/08/Netflix_2015_logo.svg';
+    }
+    return originalLogo || 'https://via.placeholder.com/60';
   }
 };

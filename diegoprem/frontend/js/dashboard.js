@@ -170,7 +170,7 @@ function renderPlatforms(platforms) {
     const groupCard = document.createElement('div');
     groupCard.className = 'platform-group-card';
 
-    const logo = items[0].platform_logo || 'https://via.placeholder.com/60';
+    const logo = Utils.getPlatformLogo(platformName, items[0].platform_logo);
 
     // Header clickeable del grupo
     const header = document.createElement('div');
@@ -225,7 +225,7 @@ function createPlatformCard(platform) {
 
   card.innerHTML = `
     <div class="platform-header">
-      <img src="${platform.platform_logo || 'https://via.placeholder.com/60'}" 
+      <img src="${Utils.getPlatformLogo(platform.platform_name, platform.platform_logo)}" 
            alt="${platform.platform_name}" 
            class="platform-logo"
            onerror="this.src='https://via.placeholder.com/60'">
