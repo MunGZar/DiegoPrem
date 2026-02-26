@@ -131,17 +131,38 @@ async function loadMessages() {
   }
 }
 
-function renderPlatforms(platforms) {
+function renderPlatforms(platforms, isSearch = false) {
   const moduleSections = document.getElementById('moduleSections');
-  if (moduleSections) moduleSections.innerHTML = '';
-
+  const searchResultsContainer = document.getElementById('searchResultsContainer');
   const emptyState = document.getElementById('emptyState');
+
+  if (moduleSections) moduleSections.innerHTML = '';
+  if (searchResultsContainer) searchResultsContainer.innerHTML = '';
 
   if (!platforms || platforms.length === 0) {
     emptyState?.classList.remove('hidden');
     moduleSections?.classList.add('hidden');
+    searchResultsContainer?.classList.add('hidden');
     return;
   }
+
+  emptyState?.classList.add('hidden');
+
+  if (isSearch) {
+    // Modo de búsqueda: Renderizado plano sin agrupar
+    moduleSections?.classList.add('hidden');
+    searchResultsContainer?.classList.remove('hidden');
+
+    platforms.forEach(platform => {
+      const card = createPlatformCard(platform);
+      searchResultsContainer.appendChild(card);
+    });
+    return;
+  }
+
+  // Renderizado normal: Grupos colapsables
+  moduleSections?.classList.remove('hidden');
+  searchResultsContainer?.classList.add('hidden');
 
   // Agrupar plataformas dinámicamente
   const groupedPlatforms = platforms.reduce((acc, platform) => {
@@ -154,15 +175,6 @@ function renderPlatforms(platforms) {
   }, {});
 
   const platformNames = Object.keys(groupedPlatforms).sort();
-
-  if (platformNames.length === 0) {
-    emptyState?.classList.remove('hidden');
-    moduleSections?.classList.add('hidden');
-    return;
-  } else {
-    emptyState?.classList.add('hidden');
-    moduleSections?.classList.remove('hidden');
-  }
 
   platformNames.forEach(platformName => {
     const items = groupedPlatforms[platformName];
@@ -345,7 +357,7 @@ function filterPlatforms(e) {
   const searchTerm = e.target.value.toLowerCase().trim();
 
   if (!searchTerm) {
-    renderPlatforms(allPlatforms);
+    renderPlatforms(allPlatforms, false);
     return;
   }
 
@@ -363,7 +375,7 @@ function filterPlatforms(e) {
       msgSubject.includes(searchTerm);
   });
 
-  renderPlatforms(filtered);
+  renderPlatforms(filtered, true);
 }
 
 async function loadStats() {
